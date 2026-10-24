@@ -101,3 +101,9 @@ Replace these placeholders with commands that work:
 - Libraries, APIs and public datasets used: TODO. Include source links and attribution.
 
 See [AI_USAGE.md](AI_USAGE.md) for AI assistance and [CHANGELOG.md](CHANGELOG.md) for the development record.
+
+## Event clarification
+
+Devin Hack Kochi has no major AI usage constraints. Participants may use Devin and other AI tools, models, and providers; this template does not require Codex or restrict AI usage to OpenAI. AI usage notes are project documentation, not an additional event eligibility requirement.
+
+See [RULES.md](RULES.md) for the corrected event guidance.
