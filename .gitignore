@@ -22,3 +22,6 @@ Thumbs.db
 *.log
 
 # Add entries appropriate to your chosen language or framework.
+
+# TypeScript incremental build info
+*.tsbuildinfo
