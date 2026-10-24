@@ -4,17 +4,21 @@ import { useCallback, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { browserSupabase } from "../supabase/browser";
 
-export interface GoogleProfile {
-  provider: "google";
+export interface AccountProfile {
+  provider: "google" | "anonymous";
   userId: string;
   name: string;
   email: string;
   avatarUrl?: string;
 }
 
-/** Reads the profile fields Kavala needs from a Supabase user signed in with Google. */
-export function profileFromUser(user: User | null): GoogleProfile | null {
+/** @deprecated Use AccountProfile; kept for older imports. */
+export type GoogleProfile = AccountProfile;
+
+/** Reads the profile fields Kavala needs from a Supabase user (Google or anonymous). */
+export function profileFromUser(user: User | null): AccountProfile | null {
   if (!user) return null;
+  if (user.is_anonymous) return { provider: "anonymous", userId: user.id, name: "", email: "" };
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
   const name = (meta.full_name as string) || (meta.name as string) || user.email || "Google user";
   return {
@@ -44,17 +48,21 @@ export async function googleProviderEnabled(url: string, anonKey: string, fetche
 }
 
 /**
- * Google sign-in through Supabase Auth. `available` is false until the
- * Supabase keys are configured and Google is switched on in Supabase, so the
- * UI can explain instead of sending people to an error page.
+ * Accounts through Supabase Auth. Masked play signs in anonymously when the
+ * project allows it, so progress is saved to an account without any sign-up;
+ * otherwise progress stays on the phone (`local` is true). "Continue with
+ * Google" links the anonymous account when it can, so nothing is lost.
+ * `available` is false until the Supabase keys are configured and Google is
+ * switched on in Supabase, so the UI can explain instead of erroring.
  */
 export function useGoogleAccount() {
   const supabase = browserSupabase();
-  const [profile, setProfile] = useState<GoogleProfile | null>(null);
+  const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const [providerOn, setProviderOn] = useState<boolean | null>(null);
+  const [anonymousOn, setAnonymousOn] = useState<boolean | null>(null);
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -72,9 +80,21 @@ export function useGoogleAccount() {
   useEffect(() => {
     if (!supabase) return;
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return;
-      setProfile(profileFromUser(data.session?.user ?? null));
+      let user: User | null = data.session?.user ?? null;
+      // Returning from Google: let the PKCE exchange finish before deciding.
+      if (!user && !window.location.search.includes("code=")) {
+        const anon = await supabase.auth.signInAnonymously();
+        if (!active) return;
+        if (anon.error) {
+          setAnonymousOn(false);
+        } else {
+          setAnonymousOn(true);
+          user = anon.data.user;
+        }
+      }
+      setProfile(profileFromUser(user));
       setReady(true);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -90,10 +110,19 @@ export function useGoogleAccount() {
     if (!supabase) return;
     setBusy(true);
     setError(null);
-    const { error: err } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
-    });
+    const options = { redirectTo: window.location.origin };
+    const { data } = await supabase.auth.getSession();
+    let err = null;
+    if (data.session?.user.is_anonymous) {
+      // Keeps the same account (and its saved progress) when Supabase allows linking.
+      const linked = await supabase.auth.linkIdentity({ provider: "google", options });
+      err = linked.error;
+      if (err && (err.code === "manual_linking_disabled" || err.code === "identity_already_exists")) {
+        err = (await supabase.auth.signInWithOAuth({ provider: "google", options })).error;
+      }
+    } else {
+      err = (await supabase.auth.signInWithOAuth({ provider: "google", options })).error;
+    }
     if (err) {
       setError(`Google sign-in didn't start: ${err.message}`);
       setBusy(false);
@@ -107,7 +136,18 @@ export function useGoogleAccount() {
     setProfile(null);
   }, [supabase]);
 
-  return { available: !!supabase && providerOn !== false, ready, profile, error, busy, signIn, signOut };
+  return {
+    available: !!supabase && providerOn !== false,
+    configured: !!supabase,
+    /** True when progress can only be kept on this phone (no Supabase, or anonymous sign-in switched off). */
+    local: !supabase || (anonymousOn === false && profile === null),
+    ready,
+    profile,
+    error,
+    busy,
+    signIn,
+    signOut,
+  };
 }
 
 export type GoogleAccount = ReturnType<typeof useGoogleAccount>;

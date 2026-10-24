@@ -26,15 +26,16 @@ interface Props {
 const USES_COLOR = new Set(["classic", "web", "owl"]);
 
 export default function Onboarding({ state, update, notify, google }: Props) {
-  const [step, setStep] = useState<Step>(state.account ? "mask" : "choose");
+  const signedIn = state.account?.provider === "google";
+  const [step, setStep] = useState<Step>(signedIn ? "mask" : "choose");
   const loc = useLocation();
   const [home, setHome] = useState<{ cell: string; fromGps: boolean } | null>(null);
   const style = maskStyleOf(state);
   const styleIndex = MASK_STYLES.findIndex((m) => m.id === style);
 
   useEffect(() => {
-    if (state.account && step === "choose") setStep("mask");
-  }, [state.account, step]);
+    if (signedIn && step === "choose") setStep("mask");
+  }, [signedIn, step]);
 
   useEffect(() => {
     if (step === "place" && loc.cells && !home) {
@@ -90,7 +91,7 @@ export default function Onboarding({ state, update, notify, google }: Props) {
         <button className="path-card mask" onClick={() => setStep("mask")}>
           <Mask color={state.maskColor} style={style} size={44} />
           <span className="path-name">Go under a mask</span>
-          <span className="path-sub">Pick a mask and a hero name. No sign-up.</span>
+          <span className="path-sub">{google.local ? "Pick a mask and a hero name. No sign-up; progress stays on this phone." : "Pick a mask and a hero name. No sign-up; progress is saved without your name."}</span>
         </button>
         {google.error && <p className="muted">{google.error}</p>}
       </section>
@@ -130,9 +131,9 @@ export default function Onboarding({ state, update, notify, google }: Props) {
             Roll a name
           </button>
         </div>
-        {state.account && <p className="muted center">Signed in as {state.account.name}. Only people you choose will see that name.</p>}
+        {signedIn && <p className="muted center">Signed in as {state.account?.name}. Only people you choose will see that name.</p>}
         <button className="btn-hero" onClick={() => setStep("place")}>This is me</button>
-        {!state.account && (
+        {!signedIn && (
           <button className="linkish center" onClick={() => setStep("choose")}>Back</button>
         )}
       </section>

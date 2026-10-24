@@ -1,5 +1,6 @@
 import { cellToParent, getResolution, isValidCell } from "h3-js";
 import { FINE_RESOLUTIONS, HOME_RESOLUTION } from "./resolution";
+import { coordinateError, findCoordinateKeys } from "../privacy/coordinates";
 
 /** What a phone sends about its position. No coordinates, ever. */
 export interface Beacon {
@@ -16,8 +17,6 @@ export type BeaconCheck = { ok: true; beacon: Beacon } | { ok: false; error: str
 /** Beacons older than this are refused. */
 export const MAX_BEACON_AGE_MS = 60_000;
 
-const FORBIDDEN_KEYS = ["lat", "lng", "lon", "latitude", "longitude", "coords", "coordinates"];
-
 /**
  * Validates a beacon request body. Rejects anything that carries raw
  * coordinates, so precise locations can never be stored by mistake.
@@ -27,10 +26,8 @@ export function validateBeacon(body: unknown, now: number = Date.now()): BeaconC
     return { ok: false, error: "Body must be a JSON object." };
   }
   const data = body as Record<string, unknown>;
-  const forbidden = Object.keys(data).filter((k) => FORBIDDEN_KEYS.includes(k.toLowerCase()));
-  if (forbidden.length > 0) {
-    return { ok: false, error: `Raw coordinates are not accepted (${forbidden.join(", ")}). Send H3 cell IDs only.` };
-  }
+  const forbidden = findCoordinateKeys(data);
+  if (forbidden.length > 0) return { ok: false, error: coordinateError(forbidden) };
 
   const { cellFine, resolution, cellR9, accuracyM, at } = data;
   if (typeof cellFine !== "string" || !isValidCell(cellFine)) {

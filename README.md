@@ -101,6 +101,15 @@ The data model is designed from day one to support these later features.
 
 Phones only share GPS with pages served over HTTPS (or localhost), so test the location page on a phone through the deployed Vercel link.
 
+### Accounts and saved progress
+
+With Supabase connected, progress (mask, hero name, home hexagon, neighbourhood, Thanks, streaks and each day's results) is saved to an account through `/api/me`. There are two kinds of account:
+
+- **Masked (anonymous):** the app signs the phone in anonymously, with no name or email, so progress survives a cleared browser. This needs **Authentication → Sign In / Providers → Anonymous sign-ins** switched on in Supabase. If it is off, masked play keeps progress on the phone only and Me offers Google sign-in to save it.
+- **Google:** counts as verified. "Continue with Google" links the anonymous account when **Authentication → Sign In / Providers → Allow manual linking** is on, so nothing is lost; otherwise it signs in afresh and copies this phone's progress into the new account.
+
+Apply `supabase/migrations/0002_accounts.sql` after `0001_init.sql` (Supabase → SQL editor, paste, run). Row-level security lets a person read and write only their own rows; the `my_neighbourhood_members()` function returns mask names only.
+
 ### Google sign-in setup
 
 Google sign-in runs through Supabase Auth. Menu names may differ slightly between dashboard versions.
@@ -112,7 +121,7 @@ Google sign-in runs through Supabase Auth. Menu names may differ slightly betwee
 3. **Supabase:** paste the Google client ID and secret into the Google provider and save. Under URL configuration, set the Site URL to your Vercel URL and add your Vercel URL and `http://localhost:3000` as redirect URLs.
 4. **Vercel:** add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, then redeploy.
 
-Signing in links a Google profile to the mask. Neighbours still see the mask name; the Google name is shown only to people the user chooses to reveal it to. In this version the profile is kept in the browser and in Supabase Auth; saving profiles to the `users` table comes with the database phase.
+Signing in links a Google profile to the mask. Neighbours still see the mask name; the Google name is shown only to people the user chooses to reveal it to. The profile row in `users` stores the mask, home cell and progress, not the Google name or email (those stay in Supabase Auth).
 
 ### Try it on a phone
 
@@ -127,6 +136,7 @@ Signing in links a Google profile to the mask. Neighbours still see the mask nam
 | --- | --- |
 | `/` | The game: a Kerala night splash, then create a profile with Google or go under a mask (original masks, Marvel-inspired hero names), then Kavala Daily with three games: Spot (find a real OpenStreetMap place in 3 tries with hot-and-cold hints), Good Turn (help a neighbour) and Quest (one small step outside, with a location-verified check-in). Games open full screen; Spot keeps your guesses if you close it; Good Turn and Quest change every day. Then a share card (native share sheet on phones, or WhatsApp), the leaderboard, Ask with widening, your neighbourhood map and the trust ladder. Sample neighbours stand in for real ones; progress is saved in your browser only |
 | `/api/places?cell=` | Named public places around a neighbourhood cell for Spot, from OpenStreetMap through three Overpass servers |
+| `/api/me` | A signed-in person's saved profile and today's results (`GET`), and saving them (`PUT`). Needs a Supabase bearer token; refuses any body that contains coordinates |
 | `/engine` | Overview of the engine pages below |
 | `/debug/location` | Live GPS accuracy, the chosen hexagon level, your cells on an OpenStreetMap map, and the exact request sent to the server |
 | `/debug/hoods` | Synthetic residents grouped into neighbourhoods; small hexagons in the dense centre, large ones at the edges |
@@ -135,7 +145,7 @@ Signing in links a Google profile to the mask. Neighbours still see the mask nam
 ### Current status
 
 - **Working features:** game experience (splash, profile or mask, full-screen games with timers, comic win bursts and a share card); Spot guesses and clock saved so closing the game can't reset the tries; a daily rotation of Good Turn questions (with a reveal of which tip sample neighbours trusted) and Quests; Spot place lists cached on the phone for a week as a fallback when OpenStreetMap is busy; add to home screen with an app icon; Google sign-in offered only when Supabase reports the Google provider is on; Spot places through a server route with three Overpass servers and a browser fallback; optional Google sign-in through Supabase Auth; app experience at `/` (join, Kavala Daily with real OpenStreetMap places, verified check-in, result card and WhatsApp share, Ask with widening, Thanks, neighbourhood map, trust ladder, reveal controls); location engine with accuracy gate, speed check, smoothing and adaptive resolution; beacon API that refuses coordinates; neighbourhood rebalancing with split and pooling; neighbourhood assignment; handshake signing and verification with APIs; daily scoring, 6 AM day boundary and check-in rule; database schema with row-level security.
-- **Known limitations:** no accounts or saved data on a server yet (the database is not connected), so the app keeps progress in the browser and uses clearly labelled sample neighbours, questions and counts; Spot places come from the public Overpass API, which can be slow or unavailable (Spot shows the reason and offers retry or skip); handshake nonces are kept in memory, so they reset on restart and are not shared between server instances; the handshake page simulates phone positions; a pooled neighbourhood can exceed 150 by up to 30 people.
+- **Known limitations:** accounts and saved progress need Supabase connected and migration 0002 applied (without them the app keeps progress in the browser); neighbours, questions, counts and the leaderboard are still clearly labelled sample content; a daily played on one phone shows as not played on a second phone (results, not the map, are saved); Thanks are still only earned from sample neighbours until Ask is live; Spot places come from the public Overpass API, which can be slow or unavailable (Spot shows the reason and offers retry or skip); handshake nonces are kept in memory, so they reset on restart and are not shared between server instances; the handshake page simulates phone positions; a pooled neighbourhood can exceed 150 by up to 30 people.
 - **Libraries, APIs and data:** [Next.js](https://nextjs.org), [h3-js](https://github.com/uber/h3-js) (Uber H3, Apache 2.0), [Leaflet](https://leafletjs.com) (BSD 2-Clause), map tiles and data [© OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL), Spot places from the [Overpass API](https://overpass-api.de), [Supabase JS](https://github.com/supabase/supabase-js) (Auth with Google), the [Bangers](https://fonts.google.com/specimen/Bangers), [Atkinson Hyperlegible](https://fonts.google.com/specimen/Atkinson+Hyperlegible) and [Noto Sans Malayalam](https://fonts.google.com/noto/specimen/Noto+Sans+Malayalam) fonts (SIL Open Font License), bundled with the app through [Fontsource](https://fontsource.org), [Vitest](https://vitest.dev). Synthetic residents are generated locally and are not real people.
 
 See [AI_USAGE.md](AI_USAGE.md) for AI assistance and [CHANGELOG.md](CHANGELOG.md) for the development record.

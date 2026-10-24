@@ -84,7 +84,7 @@ Thanks: +1 to an answer's author when the asker marks it useful. Game points nev
 
 ## Data model
 
-See `supabase/migrations/0001_init.sql`. No table stores a person's coordinates. Row-level security is on for every table with no public policies; the server uses the service-role key.
+See `supabase/migrations/0001_init.sql` and `0002_accounts.sql`. No table stores a person's coordinates (`src/lib/privacy/privacy.test.ts` checks every migration), and every API that accepts JSON from a phone refuses bodies with coordinate keys at any depth (`src/lib/privacy/coordinates.ts`). Row-level security is on for every table with no public policies; the server uses the service-role key.
 
 ## Stack
 
@@ -100,8 +100,9 @@ Next.js 16 (App Router) with React 19 and TypeScript, plain CSS with theme token
 | Daily scoring, day boundary, check-in rule | Done |
 | App experience at `/`: join, Kavala Daily (Spot on real OpenStreetMap places, Help, Small step with verified check-in), result card, Ask with widening, Thanks, neighbourhood map, trust ladder | Done with sample neighbours; progress saved in the browser |
 | Google sign-in (Supabase Auth) | Done; needs Supabase and Google OAuth setup |
+| Accounts (anonymous or Google) and saved progress in `users` and `daily_plays` through `/api/me`, RLS, `my_neighbourhood_members()` | Done; needs Supabase and migration 0002 |
 | Game experience: splash, profile or mask, games hub with Spot, Good Turn and Quest | Done |
 | Night theme and neighbourhood map | Done (3D view removed) |
-| Database connection, saved profiles, join flow on the server | Next (Phase 2) |
+| Real neighbourhoods on the server (assignment, rebalance, counts, leaderboard) | Next |
 | Real QR scanning, vouches table, live room | Next (Phase 4) |
 | Daily, Ask and Thanks saved in the database with real neighbours | Next (Phase 5) |
