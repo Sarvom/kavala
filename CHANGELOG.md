@@ -1,5 +1,12 @@
 # Change log
 
+## 2026-10-25T04:38:08+05:30 — Audit of the ported prototype
+
+- Changed: added `docs/AUDIT.md`, a phone-size play-through of the ported app (390×844 and 360×640): what works, what is broken or weak, what is sample-only, and the test baseline. No application code changed.
+- Why: step 0 of the build plan asks for an honest audit before any behaviour changes, so Phase 1 starts from known facts.
+- Validation: played splash → onboarding → Spot, Good Turn, Quest → share card → Ask → Map → Me and the engine/debug pages in Chromium mobile emulation at both sizes; Spot rounds used a stand-in `/api/places` response because Overpass is unreachable from the build machine; `git diff --check` clean. Test, typecheck and build unchanged from the port (66 tests).
+- Limitations: not a real phone; live Overpass, Google sign-in and the native share sheet were not exercised; the build machine has no emoji font, so emoji show as boxes in screenshots.
+
 ## 2026-10-25T04:18:07+05:30 — Port Kavala prototype from kavala-v1 @ 7086937
 
 - Changed: copied the Kavala application from [Sarvom/kavala-v1](https://github.com/Sarvom/kavala-v1) at commit `7086937a17915d6c8734d416cf77ea0cd1260a8e` into this repository: `src/`, `public/`, `scripts/`, `supabase/`, `docs/`, `package.json`, `package-lock.json`, `tsconfig.json`, `next.config.mjs`, `vitest.config.mts`, `next-env.d.ts`, `.env.example`, and the `*.tsbuildinfo` ignore rule. Merged the README (organiser sections kept, Kavala's run steps, pages and status added). Added the kavala-v1 build log below as carried-over history. Did not touch `RULES.md`, `AGENTS.md`, `SUBMISSION.md` or `.github/`.
