@@ -6,8 +6,6 @@ A digital daily game that turns strangers within 5 km into a small, trusted neig
 
 **Built at Devin Hacks Kochi · Track 4: Make Room for Play**
 
-[Event rules](RULES.md) · [Agent instructions](AGENTS.md) · [Changelog](CHANGELOG.md) · [AI usage](AI_USAGE.md) · [Submission](SUBMISSION.md)
-
 ---
 
 ## Why Kavala
