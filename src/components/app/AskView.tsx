@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { SAMPLE_MEMBERS, type AppState, type Question } from "@/lib/app/state";
+import type { AppState, Question } from "@/lib/app/state";
+import { countsFor, type LiveHood } from "@/lib/app/live";
 import { NeighbourMask } from "./Mask";
 
 interface Props {
   state: AppState;
   update: (fn: (s: AppState) => AppState) => void;
   notify: (message: string) => void;
+  live: LiveHood | null;
 }
 
 const CATEGORIES = ["Repairs", "Food", "Transport", "Waste", "Internet", "Other"];
@@ -21,7 +23,8 @@ function timeAgo(ms: number): string {
   return hours < 24 ? `${hours} h ago` : `${Math.round(hours / 24)} d ago`;
 }
 
-export default function AskView({ state, update, notify }: Props) {
+export default function AskView({ state, update, notify, live }: Props) {
+  const counts = countsFor(state, live);
   const [text, setText] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const todayStart = Date.now() - 24 * 3_600_000;
@@ -89,7 +92,7 @@ export default function AskView({ state, update, notify }: Props) {
           </select>
         </label>
         <p className="muted">
-          Seen only by your neighbourhood (about {SAMPLE_MEMBERS} people, sample), as {state.maskName}. {askedToday} of {limit} questions
+          Seen only by your neighbourhood ({counts.sample ? `about ${counts.members} people, sample` : `${counts.members} people`}), as {state.maskName}. {askedToday} of {limit} questions
           used today.
         </p>
         <button className="btn" onClick={post} disabled={!text.trim()}>Post question</button>

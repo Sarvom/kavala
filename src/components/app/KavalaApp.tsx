@@ -5,6 +5,7 @@ import { dailyKey } from "@/lib/daily/score";
 import { advance, clearState, initialState, linkAccount, loadState, maskStyleOf, rollDay, saveState, type AppState } from "@/lib/app/state";
 import { useGoogleAccount } from "@/lib/app/useGoogleAccount";
 import { useCloudSave } from "@/lib/app/useCloudSave";
+import { useLiveHood } from "@/lib/app/useLiveHood";
 import Splash from "./Splash";
 import Onboarding from "./Onboarding";
 import GameHub, { type Game } from "./GameHub";
@@ -37,6 +38,7 @@ export default function KavalaApp() {
   const stateRef = useRef<AppState | null>(null);
   const google = useGoogleAccount();
   const saveStatus = useCloudSave(state, setState, google.profile, google.ready);
+  const live = useLiveHood(google.profile?.userId ?? null, state?.daily.key, saveStatus);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const notify = useCallback((message: string) => {
@@ -111,9 +113,9 @@ export default function KavalaApp() {
             </header>
           )}
           <main className="app-main">
-            {tab === "play" && <GameHub state={state} update={update} notify={notify} game={game} setGame={setGame} />}
-            {tab === "ask" && <AskView state={state} update={update} notify={notify} />}
-            {tab === "map" && <HoodView state={state} />}
+            {tab === "play" && <GameHub state={state} update={update} notify={notify} game={game} setGame={setGame} live={live} />}
+            {tab === "ask" && <AskView state={state} update={update} notify={notify} live={live} />}
+            {tab === "map" && <HoodView state={state} live={live} />}
             {tab === "me" && <MeView state={state} update={update} notify={notify} onReset={reset} google={google} saveStatus={saveStatus} />}
           </main>
           {!playing && (

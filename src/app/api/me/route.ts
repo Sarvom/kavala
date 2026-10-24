@@ -5,12 +5,15 @@ import { rowsToSnapshot, validateSnapshot, type DailyPlayRow, type HoodRow, type
 import { serverSupabase } from "@/lib/supabase/server";
 import { userFromRequest } from "@/lib/supabase/auth";
 import { dailyKey } from "@/lib/daily/score";
+import { assignOnServer, recountOnServer, type HoodRecord } from "@/lib/hood/server";
 
 /**
  * A signed-in phone's saved profile and today's results.
  *   GET  /api/me?day=YYYY-MM-DD  -> { ok, snapshot | null }
- *   PUT  /api/me  (ProfileSnapshot body) -> { ok }
- * Bodies with coordinates anywhere in them are refused with 422.
+ *   PUT  /api/me  (ProfileSnapshot body) -> { ok, hood }
+ * Bodies with coordinates anywhere in them are refused with 422. The server
+ * picks the neighbourhood from the home cell; the hood sent by the phone is
+ * only a placeholder from before it had an account.
  */
 
 const USER_COLUMNS = "id, mask_name, mask_color, mask_style, home_cell, home_from_gps, neighbourhood_id, trust_level, thanks, streak, best_streak, last_played_on";
@@ -48,9 +51,9 @@ export async function PUT(request: Request) {
   const user = await userFromRequest(request, db);
   if (!user) return NextResponse.json({ ok: false, error: "Sign in first." }, { status: 401 });
 
-  const error = await saveSnapshot(db, user, check.snapshot);
-  if (error) return NextResponse.json({ ok: false, error }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  const result = await saveSnapshot(db, user, check.snapshot);
+  if ("error" in result) return NextResponse.json({ ok: false, error: result.error }, { status: 500 });
+  return NextResponse.json({ ok: true, hood: result.hood });
 }
 
 async function loadSnapshot(db: SupabaseClient, authUserId: string, day: string): Promise<{ snapshot: ProfileSnapshot | null } | { error: string }> {
@@ -71,14 +74,26 @@ async function loadSnapshot(db: SupabaseClient, authUserId: string, day: string)
 
 /**
  * Writes the profile and today's play. Trust level comes from the sign-in,
- * not from the phone: Google counts as verified, anonymous stays masked.
+ * not from the phone: Google counts as verified, anonymous stays masked. The
+ * neighbourhood is assigned here from the home cell (kept when the person
+ * already has one, until the nightly rebalance moves them).
  */
-async function saveSnapshot(db: SupabaseClient, user: User, snap: ProfileSnapshot): Promise<string | null> {
+async function saveSnapshot(db: SupabaseClient, user: User, snap: ProfileSnapshot): Promise<{ hood: HoodRecord } | { error: string }> {
   const provider = user.is_anonymous ? "anonymous" : "google";
-  const { error: hoodError } = await db
-    .from("neighbourhoods")
-    .upsert({ id: snap.hood.id, cells: snap.hood.cells, resolution: snap.hood.resolution }, { onConflict: "id", ignoreDuplicates: true });
-  if (hoodError) return `Database error: ${hoodError.message}`;
+  const { data: existing, error: existingError } = await db
+    .from("users")
+    .select("neighbourhood_id, home_cell, neighbourhoods(id, cells, resolution)")
+    .eq("auth_user_id", user.id)
+    .maybeSingle<{ neighbourhood_id: string | null; home_cell: string; neighbourhoods: HoodRecord | null }>();
+  if (existingError) return { error: `Database error: ${existingError.message}` };
+
+  let hood: HoodRecord;
+  try {
+    hood =
+      existing?.neighbourhoods && existing.home_cell === snap.homeCell ? existing.neighbourhoods : await assignOnServer(db, snap.homeCell);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Could not assign a neighbourhood." };
+  }
 
   const { data: saved, error: userError } = await db
     .from("users")
@@ -91,7 +106,7 @@ async function saveSnapshot(db: SupabaseClient, user: User, snap: ProfileSnapsho
         mask_style: snap.maskStyle,
         home_cell: snap.homeCell,
         home_from_gps: snap.homeFromGps,
-        neighbourhood_id: snap.hood.id,
+        neighbourhood_id: hood.id,
         trust_level: provider === "google" ? "verified" : "masked",
         thanks: snap.thanks,
         streak: snap.streak,
@@ -103,7 +118,15 @@ async function saveSnapshot(db: SupabaseClient, user: User, snap: ProfileSnapsho
     )
     .select("id")
     .single<{ id: string }>();
-  if (userError || !saved) return `Database error: ${userError?.message ?? "no user row"}`;
+  if (userError || !saved) return { error: `Database error: ${userError?.message ?? "no user row"}` };
+  if (existing?.neighbourhood_id !== hood.id) {
+    try {
+      await recountOnServer(db, hood.id);
+      if (existing?.neighbourhood_id) await recountOnServer(db, existing.neighbourhood_id);
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Could not update member counts." };
+    }
+  }
 
   const d = snap.daily;
   const { error: playError } = await db.from("daily_plays").upsert(
@@ -120,6 +143,6 @@ async function saveSnapshot(db: SupabaseClient, user: User, snap: ProfileSnapsho
     },
     { onConflict: "user_id,day" },
   );
-  if (playError) return `Database error: ${playError.message}`;
-  return null;
+  if (playError) return { error: `Database error: ${playError.message}` };
+  return { hood };
 }

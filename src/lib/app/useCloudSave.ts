@@ -23,15 +23,24 @@ async function fetchSnapshot(day: string): Promise<ProfileSnapshot | null | unde
   return body.ok ? body.snapshot : undefined;
 }
 
-async function putSnapshot(snap: ProfileSnapshot): Promise<boolean> {
+type Hood = ProfileSnapshot["hood"];
+
+/** Saves, and returns the neighbourhood the server assigned (null on failure). */
+async function putSnapshot(snap: ProfileSnapshot): Promise<Hood | null> {
   const t = await token();
-  if (!t) return false;
+  if (!t) return null;
   const res = await fetch("/api/me", {
     method: "PUT",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
     body: JSON.stringify(snap),
   });
-  return res.ok;
+  if (!res.ok) return null;
+  const body = (await res.json()) as { ok: boolean; hood?: Hood };
+  return body.ok && body.hood ? body.hood : null;
+}
+
+function sameHood(a: Hood | undefined, b: Hood): boolean {
+  return !!a && a.id === b.id && a.resolution === b.resolution && a.cells.join() === b.cells.join();
 }
 
 /**
@@ -39,6 +48,8 @@ async function putSnapshot(snap: ProfileSnapshot): Promise<boolean> {
  * an account it pulls the saved snapshot (or pushes this phone's progress when
  * the account is new, which is how a masked player's history follows them into
  * Google sign-in). After that, changes are saved a moment after they happen.
+ * The server decides the neighbourhood; when it differs from the phone's
+ * placeholder, the phone takes the server's.
  */
 export function useCloudSave(state: AppState | null, setState: Dispatch<SetStateAction<AppState | null>>, account: AccountProfile | null, ready: boolean) {
   const [status, setStatus] = useState<SaveStatus>("off");
@@ -49,6 +60,11 @@ export function useCloudSave(state: AppState | null, setState: Dispatch<SetState
   const userId = account?.userId ?? null;
   const joined = state?.joined ?? false;
   const dayKey = state?.daily.key;
+
+  const takeHood = (hood: Hood | null) => {
+    if (!hood) return;
+    setState((s) => (s && !sameHood(s.hood, hood) ? { ...s, hood } : s));
+  };
 
   useEffect(() => {
     if (!ready || !userId || !joined || !dayKey || loadedFor.current === userId) return;
@@ -70,7 +86,11 @@ export function useCloudSave(state: AppState | null, setState: Dispatch<SetState
         const local = s ? toSnapshot(s) : null;
         if (local) {
           lastSent.current = JSON.stringify(local);
-          putSnapshot(local).then((ok) => active && setStatus(ok ? "saved" : "error"));
+          putSnapshot(local).then((hood) => {
+            if (!active) return;
+            takeHood(hood);
+            setStatus(hood ? "saved" : "error");
+          });
         }
         return s;
       });
@@ -90,7 +110,9 @@ export function useCloudSave(state: AppState | null, setState: Dispatch<SetState
     timer.current = setTimeout(async () => {
       lastSent.current = json;
       setStatus("saving");
-      setStatus((await putSnapshot(snap)) ? "saved" : "error");
+      const hood = await putSnapshot(snap);
+      takeHood(hood);
+      setStatus(hood ? "saved" : "error");
     }, 1_500);
     return () => clearTimeout(timer.current);
   }, [state, userId, status]);
