@@ -85,7 +85,34 @@ export function Burst({ word, color = "#ffb833" }: { word: string; color?: strin
 }
 
 /** Small game icons for the hub tiles. */
-export function GameIcon({ kind }: { kind: "spot" | "help" | "quest" }) {
+export function GameIcon({ kind }: { kind: "spot" | "help" | "quest" | "lingo" | "quiz" | "poll" }) {
+  if (kind === "lingo") {
+    return (
+      <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+        <rect x="5" y="8" width="38" height="28" rx="6" fill="#0b1020" />
+        <path d="M14 42l4-6h8z" fill="#0b1020" />
+        <text x="24" y="29" textAnchor="middle" fontFamily="'Noto Sans Malayalam', sans-serif" fontWeight="700" fontSize="16" fill="#ffffff">അ</text>
+      </svg>
+    );
+  }
+  if (kind === "quiz") {
+    return (
+      <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+        <circle cx="24" cy="24" r="19" fill="#0b1020" />
+        <path d="M18 19a6 6 0 1 1 9 5c-2 1-3 2-3 5" fill="none" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" />
+        <circle cx="24" cy="35" r="2.2" fill="#ffffff" />
+      </svg>
+    );
+  }
+  if (kind === "poll") {
+    return (
+      <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+        <rect x="7" y="24" width="9" height="16" rx="2" fill="#0b1020" />
+        <rect x="20" y="10" width="9" height="30" rx="2" fill="#0b1020" />
+        <rect x="33" y="18" width="9" height="22" rx="2" fill="#0b1020" />
+      </svg>
+    );
+  }
   if (kind === "spot") {
     return (
       <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">

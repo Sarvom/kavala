@@ -1,7 +1,7 @@
 import type { SpotPlace } from "../daily/spotPlace";
 import type { AccountProfile } from "./useGoogleAccount";
 import type { Square } from "../daily/score";
-import { goodTurnFor, sampleBoard } from "./dailyContent";
+import { goodTurnFor, sampleBoard, type BonusKind } from "./dailyContent";
 
 /**
  * Everything the app experience remembers, saved on the phone only. Neighbours,
@@ -73,6 +73,8 @@ export interface DailyState {
   step?: "done" | "checked-in" | "later";
   /** How long each game took, for the result cards. */
   times?: { help?: number; step?: number };
+  /** Bonus games played today: the choice tapped and the time taken. Not part of `done`. */
+  bonus?: Partial<Record<BonusKind, { pick: string; timeMs: number }>>;
   done: boolean;
 }
 

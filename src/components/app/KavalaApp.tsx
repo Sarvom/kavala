@@ -14,12 +14,12 @@ import HoodView from "./HoodView";
 import MeView from "./MeView";
 import { Mask } from "./Mask";
 
-type Tab = "play" | "ask" | "map" | "me";
+type Tab = "play" | "map" | "ask" | "me";
 
 const TABS: { id: Tab; label: string; icon: React.JSX.Element }[] = [
   { id: "play", label: "Play", icon: <><rect x="3" y="6" width="18" height="12" rx="4" /><path d="M8 10v4M6 12h4" /><circle cx="16" cy="11" r="1" /><circle cx="18" cy="13" r="1" /></> },
-  { id: "ask", label: "Ask", icon: <><path d="M5 5h14v10H9l-4 4z" /><path d="M12 8.5v2.5" /><path d="M12 13h.01" /></> },
   { id: "map", label: "Map", icon: <><polygon points="12,3 20,7.5 20,16.5 12,21 4,16.5 4,7.5" /><circle cx="12" cy="12" r="2.5" /></> },
+  { id: "ask", label: "Ask", icon: <><path d="M5 5h14v10H9l-4 4z" /><path d="M12 8.5v2.5" /><path d="M12 13h.01" /></> },
   { id: "me", label: "Me", icon: <><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></> },
 ];
 

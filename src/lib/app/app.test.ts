@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   advance,
+  completeDaily,
   dailyNumber,
   initialState,
   nextStreak,
@@ -13,7 +14,7 @@ import {
   type Question,
 } from "./state";
 import { overpassQuery, parseOverpass, pickDailyPlace, type SpotPlace } from "../daily/spotPlace";
-import { GOOD_TURNS, QUESTS, goodTurnFor, questFor, sampleBoard } from "./dailyContent";
+import { GOOD_TURNS, LINGO, POLLS, QUESTS, QUIZ, bonusFor, goodTurnFor, questFor, sampleBoard } from "./dailyContent";
 import { googleProviderEnabled } from "./useGoogleAccount";
 
 const NOW = 1_800_000_000_000;
@@ -230,5 +231,37 @@ describe("googleProviderEnabled", () => {
       throw new Error("offline");
     }) as unknown as typeof fetch;
     expect(await googleProviderEnabled("https://x.supabase.co", "k", broken)).toBeNull();
+  });
+});
+
+describe("bonus games", () => {
+  const kinds = ["lingo", "quiz", "poll"] as const;
+
+  it("gives everyone the same round on the same day and rotates across days", () => {
+    const days = Array.from({ length: 14 }, (_, i) => `2026-11-${String(i + 1).padStart(2, "0")}`);
+    for (const kind of kinds) {
+      expect(bonusFor(kind, "2026-10-25")).toBe(bonusFor(kind, "2026-10-25"));
+      expect(new Set(days.map((d) => bonusFor(kind, d).id)).size).toBeGreaterThan(2);
+    }
+  });
+
+  it("has a valid answer for every Lingo word and Kochi Quiz question", () => {
+    for (const round of [...LINGO, ...QUIZ]) {
+      expect(round.choices.map((c) => c.id)).toContain(round.answer);
+      expect(new Set(round.choices.map((c) => c.id)).size).toBe(round.choices.length);
+    }
+  });
+
+  it("has poll shares that add up to 100 and no answer", () => {
+    for (const poll of POLLS) {
+      expect(poll.answer).toBeUndefined();
+      expect(poll.choices.reduce((sum, c) => sum + (c.picked ?? 0), 0)).toBe(100);
+    }
+  });
+
+  it("doesn't change whether the daily is complete", () => {
+    const s = initialState("2026-10-25", NOW);
+    const played = { ...s, daily: { ...s.daily, bonus: { lingo: { pick: "a", timeMs: 1000 } } } };
+    expect(completeDaily(played).daily.done).toBe(false);
   });
 });
