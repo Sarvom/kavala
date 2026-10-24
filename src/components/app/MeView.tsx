@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MASK_STYLES, maskStyleOf, randomMaskName, type AppState } from "@/lib/app/state";
 import type { GoogleAccount } from "@/lib/app/useGoogleAccount";
+import type { SaveStatus } from "@/lib/app/useCloudSave";
 import { Mask, NeighbourMask } from "./Mask";
 import GoogleButton from "./GoogleButton";
 
@@ -12,13 +13,23 @@ interface Props {
   notify: (message: string) => void;
   onReset: () => void;
   google: GoogleAccount;
+  saveStatus: SaveStatus;
 }
+
+const SAVE_TEXT: Record<SaveStatus, string> = {
+  off: "",
+  loading: "Loading your saved progress…",
+  saving: "Saving to your account…",
+  saved: "Progress saved to your account.",
+  error: "Couldn't reach your account just now. Progress is kept on this phone and saved when the connection is back.",
+};
 
 const REGULARS = ["Carol Chacko", "Tony Thomas", "Wanda Warrier"];
 
-export default function MeView({ state, update, notify, onReset, google }: Props) {
+export default function MeView({ state, update, notify, onReset, google, saveStatus }: Props) {
   const [confirmReset, setConfirmReset] = useState(false);
   const verified = state.level === "verified";
+  const signedInWithGoogle = state.account?.provider === "google";
 
   function toggleReveal(name: string, on: boolean) {
     update((s) => ({ ...s, revealedTo: on ? [...s.revealedTo, name] : s.revealedTo.filter((n) => n !== name) }));
@@ -44,12 +55,12 @@ export default function MeView({ state, update, notify, onReset, google }: Props
           ))}
         </div>
         <button className="dice" onClick={() => update((s) => ({ ...s, maskName: randomMaskName(Math.random, s.maskName) }))}>Roll a new name</button>
-        <span className="chip">{state.account ? "Verified with Google" : verified ? "Verified" : "Masked"}</span>
+        <span className="chip">{signedInWithGoogle ? "Verified with Google" : verified ? "Verified" : "Masked"}</span>
       </div>
 
       <section className="card">
         <h2>Your profile</h2>
-        {state.account ? (
+        {state.account && signedInWithGoogle ? (
           <>
             <div className="row">
               {state.account.avatarUrl && <img className="avatar" src={state.account.avatarUrl} alt="" referrerPolicy="no-referrer" />}
@@ -61,6 +72,7 @@ export default function MeView({ state, update, notify, onReset, google }: Props
             <p className="muted">
               Signed in with Google. Neighbours see {state.maskName}; your name appears only to people you choose below.
             </p>
+            {saveStatus !== "off" && <p className="muted">{SAVE_TEXT[saveStatus]}</p>}
             <button
               className="btn ghost small"
               onClick={async () => {
@@ -73,8 +85,15 @@ export default function MeView({ state, update, notify, onReset, google }: Props
           </>
         ) : (
           <>
-            <p className="muted">Create a profile with your Google account. It counts as verified and keeps your mask.</p>
-            <GoogleButton google={google} label="Create profile with Google" />
+            <p className="muted">
+              {state.account?.provider === "anonymous"
+                ? "You're playing masked. Your progress is saved to an account with no name on it. Sign in with Google to keep it when you change phones; neighbours will still see your mask."
+                : google.configured
+                  ? "You're playing masked and your progress is saved only on this phone. Sign in with Google to save it to an account; neighbours will still see your mask."
+                  : "Create a profile with your Google account. It counts as verified and keeps your mask."}
+            </p>
+            {saveStatus !== "off" && <p className="muted">{SAVE_TEXT[saveStatus]}</p>}
+            <GoogleButton google={google} label={state.account ? "Continue with Google" : "Create profile with Google"} />
           </>
         )}
       </section>
@@ -160,8 +179,10 @@ export default function MeView({ state, update, notify, onReset, google }: Props
         <h2>What Kavala keeps about you</h2>
         <p className="muted">
           Home area: <span className="mono">{state.homeCell}</span> (an H3 hexagon of about 0.1 sq km
-          {state.homeFromGps ? ", from your phone's location" : ", a demo location"}). No coordinates are stored. In this demo,
-          everything is saved only in this browser.
+          {state.homeFromGps ? ", from your phone's location" : ", a demo location"}). No coordinates are stored.{" "}
+          {google.local
+            ? "Everything is saved only in this browser."
+            : "Your mask, hexagon, streak, Thanks and each day's results are saved to your account; today's map guesses stay on this phone."}
         </p>
         <p className="muted">
           See how it works: <a href="/engine">the engine behind Kavala</a>.

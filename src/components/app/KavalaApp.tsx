@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { dailyKey } from "@/lib/daily/score";
 import { advance, clearState, initialState, linkAccount, loadState, maskStyleOf, rollDay, saveState, type AppState } from "@/lib/app/state";
 import { useGoogleAccount } from "@/lib/app/useGoogleAccount";
+import { useCloudSave } from "@/lib/app/useCloudSave";
 import Splash from "./Splash";
 import Onboarding from "./Onboarding";
 import GameHub, { type Game } from "./GameHub";
@@ -23,8 +24,9 @@ const TABS: { id: Tab; label: string; icon: React.JSX.Element }[] = [
 
 /**
  * Kavala: splash, onboarding (profile or mask), then the daily games hub.
- * Progress is saved in this browser; sample neighbours stand in for real ones
- * until accounts and the database arrive.
+ * Progress is saved in this browser and, when Supabase is connected, in the
+ * person's account (Google or anonymous). Sample neighbours stand in for real
+ * ones until neighbourhoods are live.
  */
 export default function KavalaApp() {
   const [state, setState] = useState<AppState | null>(null);
@@ -34,6 +36,7 @@ export default function KavalaApp() {
   const [toast, setToast] = useState<string | null>(null);
   const stateRef = useRef<AppState | null>(null);
   const google = useGoogleAccount();
+  const saveStatus = useCloudSave(state, setState, google.profile, google.ready);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const notify = useCallback((message: string) => {
@@ -111,7 +114,7 @@ export default function KavalaApp() {
             {tab === "play" && <GameHub state={state} update={update} notify={notify} game={game} setGame={setGame} />}
             {tab === "ask" && <AskView state={state} update={update} notify={notify} />}
             {tab === "map" && <HoodView state={state} />}
-            {tab === "me" && <MeView state={state} update={update} notify={notify} onReset={reset} google={google} />}
+            {tab === "me" && <MeView state={state} update={update} notify={notify} onReset={reset} google={google} saveStatus={saveStatus} />}
           </main>
           {!playing && (
             <nav className="tabs" aria-label="App sections">

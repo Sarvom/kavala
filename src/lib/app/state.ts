@@ -1,5 +1,5 @@
 import type { SpotPlace } from "../daily/spotPlace";
-import type { GoogleProfile } from "./useGoogleAccount";
+import type { AccountProfile } from "./useGoogleAccount";
 import type { Square } from "../daily/score";
 import { goodTurnFor, sampleBoard } from "./dailyContent";
 
@@ -99,8 +99,8 @@ export interface AppState {
   daily: DailyState;
   questions: Question[];
   revealedTo: string[];
-  /** Profile linked by signing in with Google. Others still see the mask. */
-  account?: GoogleProfile;
+  /** Supabase account behind this state: Google (verified) or anonymous (masked). Others still see the mask. */
+  account?: AccountProfile;
   /** Mask design; older saved states may not have one. */
   maskStyle?: MaskStyle;
 }
@@ -374,16 +374,18 @@ export function advance(state: AppState, now: number): { state: AppState; events
 }
 
 /**
- * Links or unlinks a Google profile. Signing in counts as verified identity;
- * the user stays masked to everyone they haven't chosen to reveal to.
+ * Links or unlinks the signed-in account. Google counts as verified identity;
+ * an anonymous account keeps the person masked. Either way the mask is what
+ * neighbours see.
  */
-export function linkAccount(state: AppState, profile: GoogleProfile | null): AppState {
+export function linkAccount(state: AppState, profile: AccountProfile | null): AppState {
   if (!profile) {
     if (!state.account) return state;
     return { ...state, account: undefined, level: "masked", revealedTo: [] };
   }
-  if (state.account?.userId === profile.userId && state.level === "verified") return state;
-  return { ...state, account: profile, level: "verified" };
+  const level: TrustLevel = profile.provider === "google" ? "verified" : state.account?.provider === "google" ? "masked" : state.level;
+  if (state.account?.userId === profile.userId && state.level === level) return state;
+  return { ...state, account: profile, level, revealedTo: level === "masked" ? [] : state.revealedTo };
 }
 
 export const STORAGE_KEY = "kavala-app-v1";
