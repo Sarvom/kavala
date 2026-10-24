@@ -1,0 +1,5 @@
+{
+  "crons": [
+    { "path": "/api/hoods/rebalance", "schedule": "0 21 * * *" }
+  ]
+}

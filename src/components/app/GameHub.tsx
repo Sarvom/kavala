@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { dailyNumber, leaderboard, SAMPLE_PLAYED_TODAY, type AppState } from "@/lib/app/state";
+import { dailyNumber, type AppState } from "@/lib/app/state";
+import { boardFor, countsFor, type LiveHood } from "@/lib/app/live";
 import { spotSquare } from "@/lib/daily/score";
 import { GameIcon, formatTime } from "./GameKit";
 import { GoodTurnGame, QuestGame, SpotGame, SQUARE_EMOJI, useDailyPlace } from "./Games";
-import { NeighbourMask } from "./Mask";
+import { Mask, NeighbourMask } from "./Mask";
 
 export type Game = "spot" | "help" | "quest";
 
@@ -16,6 +17,8 @@ interface Props {
   /** The open game, kept by the app so it can hide the header and tabs while playing. */
   game: Game | null;
   setGame: (game: Game | null) => void;
+  /** Real neighbourhood counts and board, or null while there is none yet. */
+  live: LiveHood | null;
 }
 
 /** Milliseconds until the next daily, which starts at 6:00 AM India time (00:30 UTC). */
@@ -50,7 +53,7 @@ export function shareText(state: AppState): string {
     .join("\n");
 }
 
-export default function GameHub({ state, update, notify, game, setGame }: Props) {
+export default function GameHub({ state, update, notify, game, setGame, live }: Props) {
   const [now, setNow] = useState(Date.now());
   const [canShare, setCanShare] = useState(false);
   // Start loading today's Spot place as soon as the hub opens, so Spot opens instantly.
@@ -71,7 +74,7 @@ export default function GameHub({ state, update, notify, game, setGame }: Props)
 
   const d = state.daily;
   const spot = d.spot && d.spot !== "skipped" ? d.spot : null;
-  const played = SAMPLE_PLAYED_TODAY + (d.done ? 1 : 0);
+  const counts = countsFor(state, live);
   const inProgress = !spot && d.spot !== "skipped" && (d.spotGuesses?.length ?? 0) > 0;
 
   const tiles: { id: Game; name: string; tagline: string; color: string; status: string | null }[] = [
@@ -99,7 +102,7 @@ export default function GameHub({ state, update, notify, game, setGame }: Props)
   ];
 
   const left = tiles.filter((t) => !t.status).length;
-  const board = leaderboard(state);
+  const board = boardFor(state, live);
 
   async function share() {
     const text = shareText(state);
@@ -162,15 +165,17 @@ export default function GameHub({ state, update, notify, game, setGame }: Props)
           </button>
         ))}
       </div>
-      <p className="hub-played">{played} neighbours played today <span className="tag">sample</span></p>
+      <p className="hub-played">
+        {counts.played} {counts.played === 1 ? "neighbour" : "neighbours"} played today {counts.sample && <span className="tag">sample</span>}
+      </p>
 
       <section className="board-card">
-        <span className="board-title">Today&apos;s leaderboard <span className="tag">sample</span></span>
+        <span className="board-title">Today&apos;s leaderboard {board.sample && <span className="tag">sample</span>}</span>
         <ol className="board">
-          {board.map((r, i) => (
+          {board.rows.map((r, i) => (
             <li key={r.name} className={r.me ? "me" : ""}>
               <span className="rank">{i + 1}</span>
-              <NeighbourMask name={r.name} me={state} size={28} />
+              {r.color && r.style ? <Mask color={r.color} style={r.style} size={28} /> : <NeighbourMask name={r.name} me={state} size={28} />}
               <span>{r.me ? `${r.name} (you)` : r.name}</span>
               <span className="pts">{r.points}</span>
             </li>
