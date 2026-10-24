@@ -19,7 +19,7 @@ import { fetchPlaces } from "@/lib/daily/fetchPlaces";
 import { haversineMetres } from "@/lib/geo/filter";
 import { useLocation } from "@/lib/geo/useLocation";
 import { completeDaily, type AppState, type SpotGuess, type SpotResult } from "@/lib/app/state";
-import { goodTurnFor, questFor } from "@/lib/app/dailyContent";
+import { bonusFor, goodTurnFor, questFor, type BonusKind } from "@/lib/app/dailyContent";
 import type { MapGuess } from "./SpotMap";
 import { Burst, GameFrame, buzz, formatTime, useElapsed } from "./GameKit";
 import { NeighbourMask } from "./Mask";
@@ -475,6 +475,73 @@ export function QuestGame({ state, update, notify, onClose }: { state: AppState;
           {message && <p className="hint guess-warm">{message}</p>}
           <button className="linkish center" onClick={() => finish("later")}>Skip today</button>
         </>
+      )}
+    </GameFrame>
+  );
+}
+
+/** Names, colours and win words for the bonus games. */
+export const BONUS_GAMES: Record<BonusKind, { name: string; tagline: string; color: string; ask: string; win: string; emoji: string }> = {
+  lingo: { name: "Lingo", tagline: "One Malayalam word a day", color: "#5cc8ff", ask: "What does this word mean?", win: "SHARP!", emoji: "🔤" },
+  quiz: { name: "Kochi Quiz", tagline: "One question about the city", color: "#ff7eb6", ask: "Pick one answer.", win: "CORRECT!", emoji: "❓" },
+  poll: { name: "Hood Poll", tagline: "Say what you think", color: "#9ee86b", ask: "Tap your answer to see how neighbours voted.", win: "VOTED!", emoji: "📊" },
+};
+
+/** Lingo, Kochi Quiz and Hood Poll: one tap, then the answer or the poll result. */
+export function ChoiceGame({ kind, state, update, onClose }: { kind: BonusKind; state: AppState; update: Update; onClose: () => void }) {
+  const meta = BONUS_GAMES[kind];
+  const round = bonusFor(kind, state.daily.key);
+  const result = state.daily.bonus?.[kind];
+  const elapsed = useElapsed(!result);
+  const resultRef = useRevealOn(!!result);
+  const right = round.answer ? result?.pick === round.answer : true;
+
+  function pick(id: string) {
+    if (result) return;
+    buzz(!round.answer || id === round.answer ? [30, 40, 60] : 20);
+    update((s) => ({ ...s, daily: { ...s.daily, bonus: { ...s.daily.bonus, [kind]: { pick: id, timeMs: elapsed } } } }));
+  }
+
+  return (
+    <GameFrame title={meta.name} accent={meta.color} elapsed={result?.timeMs ?? elapsed} onClose={onClose}>
+      <div className="clue-card">
+        <span className="clue-label">{kind === "poll" ? "Today's poll" : kind === "lingo" ? "Today's word" : "Today's question"}</span>
+        <span className={`clue-name ${kind === "lingo" ? "ml" : "long"}`} lang={kind === "lingo" ? "ml" : undefined}>{round.prompt}</span>
+        {round.detail && <span className="clue-kind">{round.detail}</span>}
+      </div>
+      {result && round.answer === undefined ? (
+        <div className="poll" aria-label="How neighbours voted (sample)">
+          {round.choices.map((c) => (
+            <div key={c.id} className={`poll-row ${c.id === result.pick ? "mine" : ""}`} style={{ "--pct": `${c.picked ?? 0}%` } as React.CSSProperties}>
+              <span className="poll-name">{c.id === result.pick ? `${c.text} (you)` : c.text}</span>
+              <span className="poll-pct">{c.picked ?? 0}%</span>
+            </div>
+          ))}
+          <span className="muted">How neighbours voted <span className="tag">sample</span></span>
+        </div>
+      ) : (
+        <>
+          {!result && <p className="game-note">{meta.ask}</p>}
+          <div className="answer-cards">
+            {round.choices.map((c) => {
+              const mark = !result ? "" : c.id === round.answer ? "right" : c.id === result.pick ? "wrong" : "";
+              return (
+                <button key={c.id} className={`answer-card choice ${mark}`} disabled={!!result} onClick={() => pick(c.id)}>
+                  {c.text}
+                  {mark === "right" && <span aria-label="right answer">✓</span>}
+                  {mark === "wrong" && <span aria-label="your answer">✗</span>}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+      {result && (
+        <div className="result" ref={resultRef}>
+          <Burst word={right ? meta.win : "NICE TRY!"} color={right ? meta.color : "#9fb0d8"} />
+          {round.note && <p className="game-note">{round.note}</p>}
+          <button className="btn-hero" onClick={onClose}>Back to games</button>
+        </div>
       )}
     </GameFrame>
   );

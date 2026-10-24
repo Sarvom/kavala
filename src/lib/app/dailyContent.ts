@@ -105,6 +105,90 @@ export const QUESTS: Quest[] = [
   { id: "thank-helper", title: "Thank someone who helped you this week", detail: "A guard, a shopkeeper, a neighbour. In person counts most." },
 ];
 
+/** Bonus games: quick one-tap rounds that don't count toward the daily or the streak. */
+export type BonusKind = "lingo" | "quiz" | "poll";
+
+export interface Choice {
+  id: string;
+  text: string;
+  /** Poll only: share of sample neighbours who picked this, in percent. */
+  picked?: number;
+}
+
+export interface ChoiceRound {
+  id: string;
+  prompt: string;
+  /** Shown under the prompt, such as a word's pronunciation. */
+  detail?: string;
+  choices: Choice[];
+  /** The right choice; polls have none. */
+  answer?: string;
+  /** Shown after answering. */
+  note?: string;
+}
+
+/** Malayalam words heard every day around a kavala. */
+export const LINGO: ChoiceRound[] = [
+  { id: "kavala", prompt: "കവല", detail: "kavala", answer: "b", note: "The town junction this app is named after.",
+    choices: [{ id: "a", text: "Market" }, { id: "b", text: "Junction" }, { id: "c", text: "Bus stop" }] },
+  { id: "chaaya", prompt: "ചായ", detail: "chaaya", answer: "a", note: "A tea shop is a ചായക്കട (chaayakkada).",
+    choices: [{ id: "a", text: "Tea" }, { id: "b", text: "Rice" }, { id: "c", text: "Shade" }] },
+  { id: "nanni", prompt: "നന്ദി", detail: "nanni", answer: "c", note: "Say it to whoever helped you today.",
+    choices: [{ id: "a", text: "Hello" }, { id: "b", text: "Sorry" }, { id: "c", text: "Thank you" }] },
+  { id: "chettan", prompt: "ചേട്ടൻ", detail: "chettan", answer: "b", note: "Also a polite way to address an older man, like the auto driver.",
+    choices: [{ id: "a", text: "Uncle" }, { id: "b", text: "Elder brother" }, { id: "c", text: "Friend" }] },
+  { id: "chechi", prompt: "ചേച്ചി", detail: "chechi", answer: "a", note: "Also a polite way to address an older woman.",
+    choices: [{ id: "a", text: "Elder sister" }, { id: "b", text: "Mother" }, { id: "c", text: "Teacher" }] },
+  { id: "kada", prompt: "കട", detail: "kada", answer: "c", note: "A small shop, often the heart of a lane.",
+    choices: [{ id: "a", text: "Road" }, { id: "b", text: "Door" }, { id: "c", text: "Shop" }] },
+  { id: "mazha", prompt: "മഴ", detail: "mazha", answer: "b", note: "Kerala's monsoon arrives around June.",
+    choices: [{ id: "a", text: "Wind" }, { id: "b", text: "Rain" }, { id: "c", text: "River" }] },
+  { id: "ethra", prompt: "എത്ര?", detail: "ethra?", answer: "a", note: "Handy at any shop counter.",
+    choices: [{ id: "a", text: "How much?" }, { id: "b", text: "Where?" }, { id: "c", text: "When?" }] },
+  { id: "naale", prompt: "നാളെ", detail: "naale", answer: "c", note: "Today is ഇന്ന് (innu).",
+    choices: [{ id: "a", text: "Yesterday" }, { id: "b", text: "Now" }, { id: "c", text: "Tomorrow" }] },
+  { id: "vellam", prompt: "വെള്ളം", detail: "vellam", answer: "b", note: "Ask for chooduvellam for warm drinking water.",
+    choices: [{ id: "a", text: "Milk" }, { id: "b", text: "Water" }, { id: "c", text: "White" }] },
+];
+
+/** Facts about Kochi, the demo city. */
+export const QUIZ: ChoiceRound[] = [
+  { id: "metro", prompt: "In which year did Kochi Metro open its first line?", answer: "b", note: "The first stretch opened in June 2017.",
+    choices: [{ id: "a", text: "2012" }, { id: "b", text: "2017" }, { id: "c", text: "2021" }] },
+  { id: "airport", prompt: "Kochi's airport was the world's first fully powered by…", answer: "c", note: "Cochin International Airport went fully solar in 2015.",
+    choices: [{ id: "a", text: "Wind" }, { id: "b", text: "Tidal power" }, { id: "c", text: "Solar power" }] },
+  { id: "nets", prompt: "Where are Kochi's famous Chinese fishing nets?", answer: "a", note: "They line the shore at Fort Kochi.",
+    choices: [{ id: "a", text: "Fort Kochi" }, { id: "b", text: "Kakkanad" }, { id: "c", text: "Edappally" }] },
+  { id: "dutch-palace", prompt: "Mattancherry Palace is also known as the…", answer: "b", note: "Built by the Portuguese, later renovated by the Dutch.",
+    choices: [{ id: "a", text: "Hill Palace" }, { id: "b", text: "Dutch Palace" }, { id: "c", text: "Bolgatty Palace" }] },
+  { id: "water-metro", prompt: "Kochi Water Metro started carrying passengers in…", answer: "c", note: "Its electric boats began service in April 2023.",
+    choices: [{ id: "a", text: "2015" }, { id: "b", text: "2019" }, { id: "c", text: "2023" }] },
+  { id: "biennale", prompt: "The first Kochi-Muziris Biennale was held in…", answer: "a", note: "It opened in December 2012.",
+    choices: [{ id: "a", text: "2012" }, { id: "b", text: "2002" }, { id: "c", text: "2020" }] },
+  { id: "synagogue", prompt: "The Paradesi Synagogue is in which part of Kochi?", answer: "b", note: "It stands in Jew Town, Mattancherry, built in 1568.",
+    choices: [{ id: "a", text: "Vyttila" }, { id: "b", text: "Mattancherry" }, { id: "c", text: "Kaloor" }] },
+  { id: "vasco", prompt: "Vasco da Gama was first buried in which Fort Kochi church?", answer: "c", note: "His remains were later taken to Portugal.",
+    choices: [{ id: "a", text: "Santa Cruz Basilica" }, { id: "b", text: "Vallarpadam Basilica" }, { id: "c", text: "St. Francis Church" }] },
+];
+
+/** Light questions for the neighbourhood. Shares are sample numbers until real votes arrive. */
+export const POLLS: ChoiceRound[] = [
+  { id: "chai-time", prompt: "Best time for a chai at the kavala?",
+    choices: [{ id: "a", text: "Early morning", picked: 34 }, { id: "b", text: "4 PM", picked: 48 }, { id: "c", text: "After dinner", picked: 18 }] },
+  { id: "commute", prompt: "How do you usually get to the city?",
+    choices: [{ id: "a", text: "Bus", picked: 37 }, { id: "b", text: "Metro", picked: 22 }, { id: "c", text: "Auto", picked: 14 }, { id: "d", text: "Own vehicle", picked: 27 }] },
+  { id: "puttu", prompt: "Puttu goes best with…",
+    choices: [{ id: "a", text: "Kadala curry", picked: 52 }, { id: "b", text: "Banana", picked: 29 }, { id: "c", text: "Pappadam", picked: 19 }] },
+  { id: "fix-first", prompt: "What should our neighbourhood fix first?",
+    choices: [{ id: "a", text: "Street lights", picked: 41 }, { id: "b", text: "Potholes", picked: 35 }, { id: "c", text: "Waste pickup", picked: 24 }] },
+  { id: "rain-plan", prompt: "Rainy Sunday plan?",
+    choices: [{ id: "a", text: "Sleep in", picked: 39 }, { id: "b", text: "Pazham pori and tea", picked: 44 }, { id: "c", text: "Movie", picked: 17 }] },
+  { id: "meetup", prompt: "Would you come to a neighbourhood meetup?",
+    choices: [{ id: "a", text: "Yes, this week", picked: 28 }, { id: "b", text: "Maybe on a weekend", picked: 53 }, { id: "c", text: "Not yet", picked: 19 }] },
+];
+
+const BONUS_ROUNDS: Record<BonusKind, ChoiceRound[]> = { lingo: LINGO, quiz: QUIZ, poll: POLLS };
+
 /** Small, stable string hash (FNV-1a). */
 function hash(text: string): number {
   let h = 0x811c9dc5;
@@ -125,7 +209,13 @@ export function questFor(dailyKey: string): Quest {
   return QUESTS[hash(`quest|${dailyKey}`) % QUESTS.length];
 }
 
-const BOARD_NAMES = ["Tony Thomas", "Carol Chacko", "Bruce Varghese", "Wanda Warrier", "Natasha Nair", "Steve Sebastian"];
+/** Today's round of a bonus game; the same for every player on the same day. */
+export function bonusFor(kind: BonusKind, dailyKey: string): ChoiceRound {
+  const rounds = BONUS_ROUNDS[kind];
+  return rounds[hash(`${kind}|${dailyKey}`) % rounds.length];
+}
+
+const BOARD_NAMES =["Tony Thomas", "Carol Chacko", "Bruce Varghese", "Wanda Warrier", "Natasha Nair", "Steve Sebastian"];
 
 /** Sample leaderboard that changes each day, so the demo doesn't look frozen. */
 export function sampleBoard(dailyKey: string): { name: string; points: number }[] {
