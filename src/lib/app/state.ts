@@ -140,19 +140,20 @@ export function maskStyleOf(state: Pick<AppState, "maskStyle">): MaskStyle {
   return state.maskStyle ?? "classic";
 }
 
-export const MASK_COLORS = ["#1d6a4e", "#c58a12", "#3d6fa8", "#b4533a", "#7a5ba6", "#2e8c8c"];
+/** Mask colours from the Kavala palette: web blue, crimson, kasavu gold, leaf green, violet, teal. */
+export const MASK_COLORS = ["#0d63d6", "#e23636", "#c8961e", "#1e8550", "#6d4bc3", "#139e9b"];
 
 /** Sample neighbours shown in the demo. Clearly not real people. */
 export const SAMPLE_NEIGHBOURS: Record<string, string> = {
-  "Wanda Warrier": "#b4533a",
-  "Bruce Varghese": "#3d6fa8",
-  "Tony Thomas": "#c58a12",
-  "Steve Sebastian": "#2e8c8c",
-  "Natasha Nair": "#7a5ba6",
-  "Carol Chacko": "#1d6a4e",
-  "Clint Kurian": "#b4533a",
-  "Stephen Sankar": "#3d6fa8",
-  "Scott Mathew": "#2e8c8c",
+  "Wanda Warrier": "#e23636",
+  "Bruce Varghese": "#0d63d6",
+  "Tony Thomas": "#c8961e",
+  "Steve Sebastian": "#139e9b",
+  "Natasha Nair": "#6d4bc3",
+  "Carol Chacko": "#1e8550",
+  "Clint Kurian": "#e23636",
+  "Stephen Sankar": "#0d63d6",
+  "Scott Mathew": "#139e9b",
 };
 
 export const SAMPLE_PLAYED_TODAY = 38;

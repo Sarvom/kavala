@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { SAMPLE_NEIGHBOURS, type MaskStyle } from "@/lib/app/state";
 
 /**
@@ -5,12 +6,21 @@ import { SAMPLE_NEIGHBOURS, type MaskStyle } from "@/lib/app/state";
  * art forms (Kathakali make-up, the Pulikali tiger dance).
  */
 export function Mask({ color, size = 32, style = "classic" }: { color: string; size?: number; style?: MaskStyle }) {
+  const gloss = useId();
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" focusable="false" style={{ flex: "none" }}>
+      <defs>
+        <radialGradient id={gloss} cx="34%" cy="22%" r="75%">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.5" />
+          <stop offset="0.45" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="0.85" stopColor="#000000" stopOpacity="0" />
+          <stop offset="1" stopColor="#000000" stopOpacity="0.28" />
+        </radialGradient>
+      </defs>
       {style === "classic" && (
         <>
           <circle cx="20" cy="20" r="20" fill={color} />
-          <path d="M6 19c5-7 23-7 28 0-1 6-5 8.5-9.5 7.5-2.2-.5-3.4-2.2-4.5-3.5-1.1 1.3-2.3 3-4.5 3.5C11 27.5 7 25 6 19z" fill="#0b1020" />
+          <path d="M6 19c5-7 23-7 28 0-1 6-5 8.5-9.5 7.5-2.2-.5-3.4-2.2-4.5-3.5-1.1 1.3-2.3 3-4.5 3.5C11 27.5 7 25 6 19z" fill="#0b1a33" />
           <ellipse cx="14" cy="20" rx="3.2" ry="2.1" fill="#ffffff" />
           <ellipse cx="26" cy="20" rx="3.2" ry="2.1" fill="#ffffff" />
         </>
@@ -18,7 +28,7 @@ export function Mask({ color, size = 32, style = "classic" }: { color: string; s
       {style === "web" && (
         <>
           <circle cx="20" cy="20" r="20" fill={color} />
-          <path d="M5 18c5-8 25-8 30 0-1 7-6 10-11 8.5-2-.7-3-2.4-4-3.6-1 1.2-2 2.9-4 3.6C11 28 6 25 5 18z" fill="#0b1020" />
+          <path d="M5 18c5-8 25-8 30 0-1 7-6 10-11 8.5-2-.7-3-2.4-4-3.6-1 1.2-2 2.9-4 3.6C11 28 6 25 5 18z" fill="#0b1a33" />
           <g stroke="#ffffff" strokeOpacity="0.55" strokeWidth="0.7" fill="none">
             <path d="M20 21L20 12M20 21L8 14M20 21L32 14M20 21L6 22M20 21L34 22" />
             <path d="M12 16.5Q20 13 28 16.5M9 19Q20 15.5 31 19" />
@@ -59,14 +69,17 @@ export function Mask({ color, size = 32, style = "classic" }: { color: string; s
       {style === "owl" && (
         <>
           <circle cx="20" cy="20" r="20" fill={color} />
-          <path d="M9 9l4 6M31 9l-4 6" stroke="#0b1020" strokeWidth="3" strokeLinecap="round" />
+          <path d="M9 9l4 6M31 9l-4 6" stroke="#0b1a33" strokeWidth="3" strokeLinecap="round" />
           <circle cx="14" cy="19" r="6" fill="#ffffff" />
           <circle cx="26" cy="19" r="6" fill="#ffffff" />
-          <circle cx="14" cy="19" r="2.6" fill="#0b1020" />
-          <circle cx="26" cy="19" r="2.6" fill="#0b1020" />
+          <circle cx="14" cy="19" r="2.6" fill="#0b1a33" />
+          <circle cx="26" cy="19" r="2.6" fill="#0b1a33" />
           <path d="M18 25h4l-2 4z" fill="#ffb833" />
         </>
       )}
+      {/* 3D finish: a soft top highlight and a darker rim, the same for every mask. */}
+      <circle cx="20" cy="20" r="20" fill={`url(#${gloss})`} />
+      <circle cx="20" cy="20" r="19.2" fill="none" stroke="#000000" strokeOpacity="0.14" strokeWidth="1.6" />
     </svg>
   );
 }
@@ -76,7 +89,7 @@ const NEIGHBOUR_STYLES: MaskStyle[] = ["classic", "kathakali", "owl", "pulikali"
 /** Colour for a neighbour's mask; the user's own colour when it's them. */
 export function maskColorFor(name: string, me: { maskName: string; maskColor: string }): string {
   if (name === me.maskName) return me.maskColor;
-  return SAMPLE_NEIGHBOURS[name] ?? "#2e8c8c";
+  return SAMPLE_NEIGHBOURS[name] ?? "#139e9b";
 }
 
 /** A stable mask design for each sample neighbour, and the user's own choice for them. */

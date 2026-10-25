@@ -1,5 +1,12 @@
 # Change log
 
+## 2026-10-25T06:03:01+05:30 — Kavala logos, favicons and app icons
+
+- Changed: added web versions of the Kavala brand pack in `public/brand/` (transparent WebP cut from the PNGs: light and dark lockups, light and dark marks, the 3D studio emblem cropped to the mark, and the Trying to Do Better parent logo and mark, renamed so no file name mentions Spider-Man). Replaced the PWA icons (`public/icon-192.png`, `public/icon-512.png`, palette-compressed), `src/app/apple-icon.png` and the favicon (`src/app/favicon.ico`, rebuilt as RGBA because Next.js rejects the pack's RGB icon); removed the old `src/app/icon.svg`. `manifest.ts` colours follow the new light theme.
+- Why: Govind asked for the logos in the app.
+- Validation: `npm run build` passed (an RGB favicon first failed the build with "PNG is not in RGBA format" and was fixed); logos checked composited on the light and carbon backgrounds; every brand image is under 90 KB.
+- Limitations: the red, blue and web combination of the parent logo sits close to Spider-Man's look; fine for the hackathon, but have it checked before a public launch.
+
 ## 2026-10-25T05:46:24+05:30 — Daily puzzle engine; Spot retired from the daily path (logic only)
 
 - Changed: new `src/lib/puzzles/` with three daily logic puzzles generated on the phone from the date (same puzzle for everyone each day, no server): **Web Weave** (`weave.ts`, draw one thread through every square passing numbered anchors in order; random Hamiltonian path by backbite moves), **Pookkalam** (`pookkalam.ts`, one flower per row, column and colour patch, none touching; regions regrown until the answer is unique) and **Pakal–Raavu** (`pakalRaavu.ts`, suns and moons balanced per row and column, no three alike in a line, "=" and "×" links; clues trimmed while the answer stays unique). Seeded RNG in `rng.ts`, points in `score.ts` (333 down to 100 by solve time). State: `DailyState.puzzles`, `puzzleWork`, `puzzleStartedAt`; `completeDaily` now needs Web Weave, Pookkalam, Good Turn and Quest (`pathDone`); `dailyPoints` feeds the leaderboard and the saved snapshot (`daily.points`). New migration `0004_puzzles.sql` adds `daily_plays.puzzle_points` and updates the two board functions; `/api/me` writes it and, if the migration isn't applied yet, saves everything else (`src/lib/supabase/errors.ts`).

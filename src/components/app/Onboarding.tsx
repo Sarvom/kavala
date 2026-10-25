@@ -11,6 +11,7 @@ import { MASK_COLORS, MASK_STYLES, maskStyleOf, randomMaskName, type AppState } 
 import { googleIconPaths, type GoogleAccount } from "@/lib/app/useGoogleAccount";
 import type { MapShape } from "@/components/HexMap";
 import { Mask } from "./Mask";
+import { BackGlyph } from "./Icons";
 
 const HexMap = dynamic(() => import("@/components/HexMap"), { ssr: false });
 
@@ -70,15 +71,29 @@ export default function Onboarding({ state, update, notify, google }: Props) {
     notify(`${state.maskName} has entered the kavala.`);
   }
 
-  const dots = (["choose", "mask", "place"] as Step[]).map((s) => (
-    <i key={s} className={s === step ? "on" : ""} />
-  ));
+  const stepIndex = (["choose", "mask", "place"] as Step[]).indexOf(step);
+  const back: Record<Step, Step | null> = { choose: null, mask: signedIn ? null : "choose", place: "mask" };
+  const dots = (
+    <div className="onboard-top">
+      {back[step] ? (
+        <button className="icon-btn" aria-label="Back" onClick={() => setStep(back[step]!)}>
+          <BackGlyph />
+        </button>
+      ) : (
+        <span className="icon-btn" aria-hidden="true" />
+      )}
+      <div className="bar" role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={stepIndex + 1} aria-label={`Step ${stepIndex + 1} of 3`}>
+        <i style={{ "--pct": `${((stepIndex + 1) / 3) * 100}%` } as React.CSSProperties} />
+      </div>
+    </div>
+  );
 
   if (step === "choose") {
     return (
       <section className="onboard">
-        <div className="onboard-dots">{dots}</div>
-        <h1 className="onboard-title">Who are you tonight?</h1>
+        {dots}
+        <h1 className="onboard-title">Who are you today?</h1>
+        <p className="onboard-ml" lang="ml">നിങ്ങൾ ആരാണ്?</p>
         <button className="path-card profile" onClick={google.available ? google.signIn : undefined} disabled={!google.available || google.busy}>
           <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true">
             {googleIconPaths().map((p) => (
@@ -89,7 +104,7 @@ export default function Onboarding({ state, update, notify, google }: Props) {
           <span className="path-sub">{google.available ? "Sign in with Google. Neighbours still see your mask." : "Google sign-in isn't switched on for this demo yet."}</span>
         </button>
         <button className="path-card mask" onClick={() => setStep("mask")}>
-          <Mask color={state.maskColor} style={style} size={44} />
+          <Mask color={state.maskColor} style={style} size={48} />
           <span className="path-name">Go under a mask</span>
           <span className="path-sub">{google.local ? "Pick a mask and a hero name. No sign-up; progress stays on this phone." : "Pick a mask and a hero name. No sign-up; progress is saved without your name."}</span>
         </button>
@@ -101,12 +116,13 @@ export default function Onboarding({ state, update, notify, google }: Props) {
   if (step === "mask") {
     return (
       <section className="onboard">
-        <div className="onboard-dots">{dots}</div>
+        {dots}
         <h1 className="onboard-title">Choose your mask</h1>
+        <p className="onboard-ml" lang="ml">നിങ്ങളുടെ മുഖംമൂടി</p>
         <div className="mask-stage">
           <button className="arrow" aria-label="Previous mask" onClick={() => cycle(-1)}>‹</button>
           <div className="mask-hero">
-            <Mask color={state.maskColor} style={style} size={150} />
+            <span className="mask-plate" key={style}><Mask color={state.maskColor} style={style} size={150} /></span>
             <span className="mask-label">{MASK_STYLES[styleIndex]?.label}</span>
           </div>
           <button className="arrow" aria-label="Next mask" onClick={() => cycle(1)}>›</button>
@@ -126,16 +142,14 @@ export default function Onboarding({ state, update, notify, google }: Props) {
           </div>
         )}
         <div className="hero-name">
+          <span className="hero-name-label">Your hero name</span>
           <span className="hero-name-text">{state.maskName}</span>
-          <button className="dice" onClick={() => update((s) => ({ ...s, maskName: randomMaskName(Math.random, s.maskName) }))}>
-            Roll a name
+          <button className="btn ghost small dice" onClick={() => update((s) => ({ ...s, maskName: randomMaskName(Math.random, s.maskName) }))}>
+            🎲 Roll a name
           </button>
         </div>
         {signedIn && <p className="muted center">Signed in as {state.account?.name}. Only people you choose will see that name.</p>}
         <button className="btn-hero" onClick={() => setStep("place")}>This is me</button>
-        {!signedIn && (
-          <button className="linkish center" onClick={() => setStep("choose")}>Back</button>
-        )}
       </section>
     );
   }
@@ -143,8 +157,9 @@ export default function Onboarding({ state, update, notify, google }: Props) {
   const asking = loc.status === "asking" || loc.status === "watching";
   return (
     <section className="onboard">
-      <div className="onboard-dots">{dots}</div>
+      {dots}
       <h1 className="onboard-title">Drop into your neighbourhood</h1>
+      <p className="onboard-ml" lang="ml">നിങ്ങളുടെ അയൽപക്കം</p>
       {home && hood ? (
         <>
           <HexMap center={[KOCHI_CENTRE.lat, KOCHI_CENTRE.lng]} zoom={13} shapes={shapes} fit height={260} />
@@ -157,15 +172,16 @@ export default function Onboarding({ state, update, notify, google }: Props) {
         <>
           <div className="drop-pin" aria-hidden="true">
             <svg viewBox="0 0 64 64" width="96" height="96">
-              <polygon points="32,3 58,18 58,46 32,61 6,46 6,18" fill="none" stroke="#3ddc97" strokeWidth="2.5" />
-              <path d="M32 16c-7 0-12 5-12 12 0 9 12 20 12 20s12-11 12-20c0-7-5-12-12-12z" fill="#ffb833" />
-              <circle cx="32" cy="28" r="4.5" fill="#0b1020" />
+              <polygon points="32,6 56,20 56,46 32,60 8,46 8,20" fill="#e7f0fd" stroke="#0d63d6" strokeWidth="3" strokeLinejoin="round" />
+              <path d="M32 17c-6.6 0-12 5-12 11.4 0 8.6 12 19 12 19s12-10.4 12-19C44 22 38.6 17 32 17z" fill="#a81f27" transform="translate(0 2)" />
+              <path d="M32 17c-6.6 0-12 5-12 11.4 0 8.6 12 19 12 19s12-10.4 12-19C44 22 38.6 17 32 17z" fill="#e23636" />
+              <circle cx="32" cy="28.5" r="4.6" fill="#ffffff" />
             </svg>
           </div>
-          <button className="btn-hero" onClick={loc.start} disabled={asking}>
+          <button className="btn-hero blue" onClick={loc.start} disabled={asking}>
             {asking ? "Finding you…" : "Use my location"}
           </button>
-          <button className="btn ghost" onClick={() => { loc.stop(); setHome({ cell: latLngToCell(KOCHI_CENTRE.lat, KOCHI_CENTRE.lng, 9), fromGps: false }); }}>
+          <button className="btn-hero ghost" onClick={() => { loc.stop(); setHome({ cell: latLngToCell(KOCHI_CENTRE.lat, KOCHI_CENTRE.lng, 9), fromGps: false }); }}>
             Try a demo spot in Kochi
           </button>
           {loc.message && <p className="muted center">{loc.message}</p>}

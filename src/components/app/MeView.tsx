@@ -6,6 +6,7 @@ import type { GoogleAccount } from "@/lib/app/useGoogleAccount";
 import type { SaveStatus } from "@/lib/app/useCloudSave";
 import { Mask, NeighbourMask } from "./Mask";
 import GoogleButton from "./GoogleButton";
+import { Coin, Flame } from "./Icons";
 
 interface Props {
   state: AppState;
@@ -38,8 +39,12 @@ export default function MeView({ state, update, notify, onReset, google, saveSta
 
   return (
     <>
+      <div className="page-head">
+        <h1 className="flow-title">Me</h1>
+        <span className="ml" lang="ml">ഞാൻ</span>
+      </div>
       <div className="card center-card">
-        <Mask color={state.maskColor} style={maskStyleOf(state)} size={96} />
+        <span className="mask-plate"><Mask color={state.maskColor} style={maskStyleOf(state)} size={96} /></span>
         <div className="mask-name">{state.maskName}</div>
         <div className="row" style={{ justifyContent: "center" }}>
           {MASK_STYLES.map((m) => (
@@ -54,8 +59,8 @@ export default function MeView({ state, update, notify, onReset, google, saveSta
             </button>
           ))}
         </div>
-        <button className="dice" onClick={() => update((s) => ({ ...s, maskName: randomMaskName(Math.random, s.maskName) }))}>Roll a new name</button>
-        <span className="chip">{signedInWithGoogle ? "Verified with Google" : verified ? "Verified" : "Masked"}</span>
+        <button className="btn ghost small" onClick={() => update((s) => ({ ...s, maskName: randomMaskName(Math.random, s.maskName) }))}>🎲 Roll a new name</button>
+        <span className="chip blue">{signedInWithGoogle ? "Verified with Google" : verified ? "Verified" : "Masked"}</span>
       </div>
 
       <section className="card">
@@ -98,24 +103,27 @@ export default function MeView({ state, update, notify, onReset, google, saveSta
         )}
       </section>
       <div className="stats">
-        <div className="stat"><b>{state.thanks}</b><span>Thanks</span></div>
-        <div className="stat"><b>{state.streak}</b><span>Day streak</span></div>
+        <div className="stat"><b style={{ display: "flex", alignItems: "center", gap: 4 }}><Coin size={22} />{state.thanks}</b><span>Thanks</span></div>
+        <div className="stat"><b style={{ display: "flex", alignItems: "center", gap: 4 }}><Flame size={22} lit={state.streak > 0} />{state.streak}</b><span>Day streak</span></div>
         <div className="stat"><b>{Math.max(state.bestStreak ?? 0, state.streak)}</b><span>Best streak</span></div>
       </div>
       <p className="muted center">Miss a day and your streak waits for you. Miss two and it starts again.</p>
 
       <section className="card">
-        <h2>Trust ladder</h2>
+        <div className="section-head">
+          <h2>Trust ladder</h2>
+          <span className="section-ml" lang="ml">വിശ്വാസത്തിന്റെ പടവുകൾ</span>
+        </div>
         <ol className="ladder">
           <li className={verified ? "done" : "current"}>
-            <span className="badge">1</span>
+            <span className="badge" aria-label="Step 1"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 11c3-4.5 17-4.5 20 0-.6 4-3.5 5.6-6.4 5-1.6-.4-2.5-1.6-3.6-2.6-1.1 1-2 2.2-3.6 2.6C5.5 16.6 2.6 15 2 11z" /></svg></span>
             <div>
               <h3>Masked</h3>
               <p>Play, ask (3 a day), answer, receive Thanks, join public meetups.</p>
             </div>
           </li>
           <li className={verified ? "current" : ""}>
-            <span className="badge">2</span>
+            <span className="badge" aria-label="Step 2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span>
             <div>
               <h3>Verified</h3>
               <p>Message neighbours with mutual consent, ask 10 a day, and reveal your name to people you choose.</p>
@@ -133,7 +141,7 @@ export default function MeView({ state, update, notify, onReset, google, saveSta
             </div>
           </li>
           <li>
-            <span className="badge">3</span>
+            <span className="badge" aria-label="Step 3"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h5l3-3 3 3h5v3l-4 3v4H8v-4l-4-3z" /></svg></span>
             <div>
               <h3>Vouched</h3>
               <p>
@@ -143,7 +151,7 @@ export default function MeView({ state, update, notify, onReset, google, saveSta
             </div>
           </li>
           <li>
-            <span className="badge">4</span>
+            <span className="badge" aria-label="Step 4"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" /></svg></span>
             <div>
               <h3>Watch</h3>
               <p>Trusted neighbours who review reports and welcome newcomers. Coming next.</p>
@@ -197,6 +205,10 @@ export default function MeView({ state, update, notify, onReset, google, saveSta
           <button className="btn ghost small" onClick={() => setConfirmReset(true)}>Start over</button>
         )}
       </section>
+      <div className="brand-foot">
+        <img src="/brand/trying-to-do-better-light.webp" alt="Trying to Do Better" width={68} height={56} />
+        <span className="fine">Kavala is a Trying to Do Better project.</span>
+      </div>
     </>
   );
 }

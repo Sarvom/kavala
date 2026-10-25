@@ -53,10 +53,14 @@ Honest limit: a browser cannot reliably detect fake-location apps. The speed che
 ## Kavala Daily (implemented: `src/lib/daily`, `src/components/app/Games.tsx`)
 
 - One ritual per neighbourhood per day; the day starts at 6:00 AM IST (`dailyKey`).
-- Played like a daily puzzle: a hub with three game tiles, a clock in each game, a comic burst on a win, and a share card with coloured squares once all three are done.
-- **Spot:** find a named local place on the map in up to 3 tries. Within 120 m solves it; otherwise a hint gives warmth (Hot to 300 m, Warm to 700 m, Cold to 1.5 km, then Freezing), the distance and a compass direction. Score uses the closest try. Points `round(1000 * exp(-d / 500))`, d in metres. Squares: green when found (to 120 m), yellow to 500 m, orange to 2 km, grey beyond.
+- Played like a daily puzzle app: **Today** is a path of four round 3D nodes (Web Weave → Pookkalam → Good Turn → Quest), each game opens full screen with a clock and ends on a result sheet, and "Daily complete" brings confetti and a share card. Daily points are the sum of solved puzzles (each 333 down to 100 by solve time, `src/lib/puzzles/score.ts`).
+- **Web Weave** (`src/lib/puzzles/weave.ts`): a 6 × 6 grid with eight numbered anchors. Draw one thread through every square, moving up, down, left or right, starting at 1, passing the anchors in order and ending on 8. The hidden thread is a random Hamiltonian path made by backbite moves; any thread that follows the rules wins.
+- **Pookkalam** (`src/lib/puzzles/pookkalam.ts`): a 7 × 7 floral carpet in seven colour patches. Place one flower in every row, column and patch, with no two flowers touching, even at a corner. Patches are grown around a random valid placement and then reshaped until the answer is unique.
+- **Pakal–Raavu** (`src/lib/puzzles/pakalRaavu.ts`, bonus): a 6 × 6 grid of suns and moons. Each row and column has three of each, never three alike in a line, "=" links match and "×" links differ. Clues are trimmed while the answer stays unique, then a few starting marks are handed back so it fits a two-minute play.
+- All three are generated on the phone from the daily key with a seeded generator (`rng.ts`), so the whole city gets the same puzzle each day with no server; a 365-day sweep found every Pookkalam and Pakal–Raavu with exactly one answer.
+- **Spot (retired 25 October 2026):** find a named local place on the map in up to 3 tries, scored `round(1000 * exp(-d / 500))`. Removed from the daily because the public Overpass servers it depends on often refused requests from the hosting provider, so it couldn't be demonstrated reliably. The scoring and place code stay in `src/lib/daily/` with their tests.
 - **Good Turn:** a neighbour's question in a speech bubble; mark the answer you'd trust or write a better one.
-- **Quest:** a small real-world action (say hi to the newest neighbour, or visit today's Spot place). A check-in at a place is accepted only when the phone's cell is the place's cell or touches it (`verifyCheckin`).
+- **Quest:** a small real-world action (say hi to the newest neighbour, learn a shopkeeper's name, find your waste day…), marked done by the player. The place check-in rule (`verifyCheckin`: the phone's cell equals or touches the place's cell) stays in the engine for later quests.
 - Then a result card and "See you tomorrow". Nothing more to scroll.
 - **Bonus games** (`ChoiceGame` in `Games.tsx`, content in `src/lib/app/dailyContent.ts`): three optional one-tap rounds below the daily, the same for everyone each day. **Lingo**: what a common Malayalam word means. **Kochi Quiz**: one fact about Kochi. **Hood Poll**: a light question, then the vote split (sample numbers until real votes are stored). They show on the share card when played but don't count toward the daily being complete or the streak.
 
@@ -77,7 +81,7 @@ Thanks: +1 to an answer's author when the asker marks it useful. Game points nev
 
 ## Look and identity
 
-- **Theme:** a friendly neighbourhood at night: navy streets, amber streetlights, teal for neighbours, comic-panel depth and a generic web motif for the threads between people. No Spider-Man names, logos, suits or characters: the nod stays in the tagline and the mask.
+- **Theme:** a bright, chunky 3D interface in the spirit of game apps such as Duolingo (depth, bounce, clear rewards), in Kavala's brand colours: crimson and web blue from the logo, kasavu gold for rewards, navy ink, a fine web line for the threads between people, and Malayalam labels beside the English ones. Light mode. No Spider-Man names, logos, suits or characters, and nothing copied from Duolingo or LinkedIn.
 - **Splash** (`Splash.tsx`): an original night scene of a Kerala junction: backwaters and a houseboat, coconut palms, a tea shop (ചായക്കട), a green KAVALA road sign, festival lights, and an original masked hero on the roof. Then the Kavala logo and "Enter the kavala".
 - **Profile or mask** (`Onboarding.tsx`): create a profile with Google, or go under a mask. Masks are original designs: Night watch, Web weaver, Kathakali, Pulikali tiger and Night owl (`Mask.tsx`). Hero names are Marvel-inspired with Kerala surnames (Peter Bhaskaran, Miles Mohan, Gwen George and others), with "Roll a name".
 - **Neighbourhood map:** a flat OpenStreetMap map of the neighbourhood's hexagons. The earlier 3D view was removed.
@@ -102,9 +106,10 @@ Next.js 16 (App Router) with React 19 and TypeScript, plain CSS with theme token
 | App experience at `/`: join, Kavala Daily (Spot on real OpenStreetMap places, Help, Small step with verified check-in), result card, Ask with widening, Thanks, neighbourhood map, trust ladder | Done with sample neighbours; progress saved in the browser |
 | Google sign-in (Supabase Auth) | Done; needs Supabase and Google OAuth setup |
 | Accounts (anonymous or Google) and saved progress in `users` and `daily_plays` through `/api/me`, RLS, `my_neighbourhood_members()` | Done; needs Supabase and migration 0002 |
-| Game experience: splash, profile or mask, games hub with Spot, Good Turn and Quest | Done |
+| Game experience: splash, profile or mask, games hub with Spot, Good Turn and Quest | Done; Spot replaced by daily puzzles on 25 October 2026 |
+| Duolingo-style 3D redesign with the Kavala logos; daily puzzles Web Weave, Pookkalam, Pakal–Raavu | Done |
 | Night theme and neighbourhood map | Done (3D view removed) |
 | Real neighbourhoods on the server: assignment in `/api/me`, nightly rebalance at `/api/hoods/rebalance`, real counts and board through `my_neighbourhood_stats/board` with sample fallback under 5 players | Done; needs Supabase, migration 0003 and `CRON_SECRET` |
-| Real Ask and Thanks, Good Turn from real questions, QR handshake with stored nonces, Spot place cache | Next |
+| Real Ask and Thanks, Good Turn from real questions, QR handshake with stored nonces | Next |
 | Real QR scanning, vouches table, live room | Next (Phase 4) |
 | Daily, Ask and Thanks saved in the database with real neighbours | Next (Phase 5) |
