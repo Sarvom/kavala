@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CheckGlyph, CloseGlyph } from "./Icons";
 
 /** mm:ss for a duration in milliseconds. */
 export function formatTime(ms: number): string {
@@ -23,30 +24,39 @@ export function useElapsed(running: boolean, startedAt?: number): number {
   return Math.max(0, now - (startedAt ?? opened.current));
 }
 
-/** The frame every game shares: close button, title and a running clock. */
+/** The frame every game shares: close button, title (with its Malayalam name) and a clock. */
 export function GameFrame({
   title,
+  ml,
   accent,
+  accentDeep,
   elapsed,
   onClose,
   children,
 }: {
   title: string;
+  ml?: string;
   accent: string;
-  elapsed: number;
+  accentDeep: string;
+  elapsed?: number;
   onClose: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <section className="game" style={{ "--accent": accent } as React.CSSProperties}>
+    <section className="game" style={{ "--accent": accent, "--accent-deep": accentDeep } as React.CSSProperties}>
       <header className="game-bar">
-        <button className="game-close" onClick={onClose} aria-label="Back to games">
-          ✕
+        <button className="game-close" onClick={onClose} aria-label="Back to today">
+          <CloseGlyph />
         </button>
-        <span className="game-title">{title}</span>
-        <span className="game-clock" aria-label="Time">
-          {formatTime(elapsed)}
+        <span className="game-title">
+          {title}
+          {ml && <span className="ml" lang="ml">{ml}</span>}
         </span>
+        {elapsed !== undefined && (
+          <span className="game-clock" aria-label="Time">
+            {formatTime(elapsed)}
+          </span>
+        )}
       </header>
       {children}
     </section>
@@ -62,80 +72,99 @@ export function buzz(pattern: number | number[]): void {
   }
 }
 
-/** A comic starburst with a word in it, for wins. */
-export function Burst({ word, color = "#ffb833" }: { word: string; color?: string }) {
-  const points: string[] = [];
-  const spikes = 16;
-  for (let i = 0; i < spikes * 2; i++) {
-    const r = i % 2 === 0 ? 96 : 70;
-    const a = (Math.PI * i) / spikes - Math.PI / 2;
-    points.push(`${(120 + r * Math.cos(a)).toFixed(1)},${(105 + r * Math.sin(a) * 0.82).toFixed(1)}`);
-  }
+/**
+ * The end-of-game sheet that slides up from the bottom, like the end of a
+ * lesson: green for a win, amber for a near miss, blue for a calm finish.
+ */
+export function ResultSheet({
+  tone,
+  title,
+  sub,
+  stats,
+  action = "Continue",
+  onAction,
+  children,
+}: {
+  tone: "good" | "close" | "calm";
+  title: string;
+  sub?: string;
+  stats?: { label: string; value: string }[];
+  action?: string;
+  onAction: () => void;
+  children?: React.ReactNode;
+}) {
   return (
-    <svg className="burst" viewBox="0 0 240 210" role="img" aria-label={word}>
-      <polygon points={points.join(" ")} fill="#050812" transform="translate(6 6)" />
-      <polygon points={points.join(" ")} fill={color} stroke="#050812" strokeWidth="4" strokeLinejoin="round" />
-      {/* textLength keeps the word inside the burst whatever font the phone ends up using. */}
-      <text x="120" y="118" textAnchor="middle" fontFamily="Bangers, Impact, sans-serif" fontSize="38" fill="#0b1020" letterSpacing="1"
-        textLength={Math.min(136, word.length * 17)} lengthAdjust="spacingAndGlyphs">
-        {word}
-      </text>
-    </svg>
+    <>
+      <div className="sheet-space" aria-hidden="true" />
+      <div className={`sheet ${tone}`} role="status" aria-live="polite">
+        <div className="sheet-head">
+          <span className="sheet-badge" aria-hidden="true">
+            {tone === "good" ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+            ) : tone === "close" ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 7v6M12 17h.01" /><circle cx="12" cy="12" r="9.5" /></svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z" /></svg>
+            )}
+          </span>
+          <div>
+            <div className="sheet-title">{title}</div>
+            {sub && <div className="sheet-sub">{sub}</div>}
+          </div>
+        </div>
+        {children}
+        {stats && stats.length > 0 && (
+          <div className="result-stats">
+            {stats.map((s) => (
+              <div key={s.label}>
+                <b>{s.value}</b>
+                <span>{s.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <button className={`btn-hero ${tone === "good" ? "green" : tone === "close" ? "amber" : "blue"}`} onClick={onAction} autoFocus>
+          {action}
+        </button>
+      </div>
+    </>
   );
 }
 
-/** Small game icons for the hub tiles. */
-export function GameIcon({ kind }: { kind: "spot" | "help" | "quest" | "lingo" | "quiz" | "poll" }) {
-  if (kind === "lingo") {
-    return (
-      <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
-        <rect x="5" y="8" width="38" height="28" rx="6" fill="#0b1020" />
-        <path d="M14 42l4-6h8z" fill="#0b1020" />
-        <text x="24" y="29" textAnchor="middle" fontFamily="'Noto Sans Malayalam', sans-serif" fontWeight="700" fontSize="16" fill="#ffffff">അ</text>
-      </svg>
-    );
-  }
-  if (kind === "quiz") {
-    return (
-      <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
-        <circle cx="24" cy="24" r="19" fill="#0b1020" />
-        <path d="M18 19a6 6 0 1 1 9 5c-2 1-3 2-3 5" fill="none" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" />
-        <circle cx="24" cy="35" r="2.2" fill="#ffffff" />
-      </svg>
-    );
-  }
-  if (kind === "poll") {
-    return (
-      <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
-        <rect x="7" y="24" width="9" height="16" rx="2" fill="#0b1020" />
-        <rect x="20" y="10" width="9" height="30" rx="2" fill="#0b1020" />
-        <rect x="33" y="18" width="9" height="22" rx="2" fill="#0b1020" />
-      </svg>
-    );
-  }
-  if (kind === "spot") {
-    return (
-      <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
-        <polygon points="24,3 43,14 43,34 24,45 5,34 5,14" fill="none" stroke="#0b1020" strokeWidth="3" />
-        <path d="M24 12c-5 0-9 4-9 9 0 7 9 15 9 15s9-8 9-15c0-5-4-9-9-9z" fill="#0b1020" />
-        <circle cx="24" cy="21" r="3.5" fill="#ffffff" />
-      </svg>
-    );
-  }
-  if (kind === "help") {
-    return (
-      <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
-        <path d="M6 10h26v18H16l-8 7v-7H6z" fill="#0b1020" />
-        <path d="M24 22c3-4 10-3 10 2 0 4-5 7-10 11-5-4-10-7-10-11 0-5 7-6 10-2z" transform="translate(8 2)" fill="#ffffff" stroke="#0b1020" strokeWidth="2.5" />
-      </svg>
-    );
-  }
+const CONFETTI_COLORS = ["#e23636", "#0d63d6", "#d4af37", "#2bb673", "#ffffff", "#f08c1e"];
+
+/** A short burst of confetti for "Daily complete!". Pure CSS; hidden when motion is reduced. */
+export function Confetti() {
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: 36 }, (_, i) => ({
+        l: `${(i * 37) % 100}%`,
+        c: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        r: `${(i * 53) % 360}deg`,
+        d: `${(i % 9) * 0.05}s`,
+      })),
+    [],
+  );
+  const [show, setShow] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setShow(false), 2200);
+    return () => clearTimeout(t);
+  }, []);
+  if (!show) return null;
   return (
-    <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
-      <path d="M12 42V8" stroke="#0b1020" strokeWidth="3.5" strokeLinecap="round" />
-      <path d="M12 9h22l-5 7 5 7H12z" fill="#0b1020" />
-      <circle cx="30" cy="38" r="3" fill="#0b1020" />
-      <circle cx="22" cy="31" r="2.4" fill="#0b1020" />
-    </svg>
+    <div className="confetti" aria-hidden="true">
+      {pieces.map((p, i) => (
+        <i key={i} style={{ "--l": p.l, "--c": p.c, "--r": p.r, "--d": p.d } as React.CSSProperties} />
+      ))}
+    </div>
+  );
+}
+
+/** Small green tick badge for a finished node or tile. */
+export function DoneMark() {
+  return (
+    <span className="node-check" aria-hidden="true">
+      <CheckGlyph />
+    </span>
   );
 }

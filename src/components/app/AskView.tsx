@@ -74,8 +74,8 @@ export default function AskView({ state, update, notify, live }: Props) {
 
   return (
     <>
-      <div>
-        <p className="eyebrow">Ask</p>
+      <div className="page-head">
+        <span className="ml" lang="ml">ചോദിക്കൂ</span>
         <h1 className="flow-title">Ask your neighbours</h1>
       </div>
       <section className="card">

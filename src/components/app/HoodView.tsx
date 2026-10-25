@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import { cellToLatLng, gridDisk } from "h3-js";
 import { cellPolygon } from "@/lib/geo/cells";
-import type { AppState } from "@/lib/app/state";
+import { dailyPoints, type AppState } from "@/lib/app/state";
 import { boardFor, countsFor, MIN_REAL_PLAYERS, type LiveHood } from "@/lib/app/live";
 import type { MapShape } from "@/components/HexMap";
 import { Mask, NeighbourMask } from "./Mask";
@@ -33,8 +33,8 @@ export default function HoodView({ state, live }: { state: AppState; live: LiveH
 
   return (
     <>
-      <div>
-        <p className="eyebrow">Neighbourhood</p>
+      <div className="page-head">
+        <span className="ml" lang="ml">അയൽപക്കം</span>
         <h1 className="flow-title">Your kavala</h1>
         <p className="muted">
           H3 resolution {hood.resolution}, {AREA[hood.resolution] ?? "a small area"}. It shrinks where homes are dense and grows where they
@@ -60,7 +60,7 @@ export default function HoodView({ state, live }: { state: AppState; live: LiveH
             </li>
           ))}
         </ol>
-        {!state.daily.spot && <p className="muted">Play today&apos;s Spot to join the leaderboard.</p>}
+        {dailyPoints(state.daily) === null && <p className="muted">Solve today&apos;s puzzles to join the leaderboard.</p>}
       </section>
       {counts.sample ? (
         <p className="muted">

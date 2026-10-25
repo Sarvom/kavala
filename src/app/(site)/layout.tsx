@@ -3,7 +3,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="shell">
       <header className="topbar">
-        <a href="/" className="wordmark">Kavala</a>
+        <a href="/" className="wordmark"><img src="/brand/kavala-mark-light.webp" alt="" width={34} height={34} />Kavala</a>
         <nav aria-label="Main">
           <a href="/">Play</a>
           <a href="/engine">Engine</a>
@@ -13,7 +13,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         </nav>
       </header>
       <main>{children}</main>
-      <footer className="foot">Your friendly neighbourhood · maps &copy; OpenStreetMap contributors</footer>
+      <footer className="foot"><img src="/brand/trying-to-do-better-mark-light.webp" alt="" width={28} height={28} />Kavala by Trying to Do Better · maps &copy; OpenStreetMap contributors</footer>
     </div>
   );
 }

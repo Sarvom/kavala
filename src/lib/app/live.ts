@@ -1,4 +1,4 @@
-import { leaderboard, SAMPLE_MEMBERS, SAMPLE_PLAYED_TODAY, type AppState, type MaskStyle } from "./state";
+import { dailyPoints, leaderboard, SAMPLE_MEMBERS, SAMPLE_PLAYED_TODAY, type AppState, type MaskStyle } from "./state";
 
 /**
  * What the phone knows about its real neighbourhood, read through the
@@ -38,8 +38,7 @@ export function isReal(live: LiveHood | null | undefined): live is LiveHood {
 }
 
 function myPoints(state: AppState): number | null {
-  const spot = state.daily.spot;
-  return spot && spot !== "skipped" ? spot.points : null;
+  return dailyPoints(state.daily);
 }
 
 /**
@@ -58,7 +57,7 @@ export function boardFor(state: AppState, live: LiveHood | null | undefined): { 
   return { rows: rows.slice(0, 10), sample: false };
 }
 
-const PLAYED_KEYS: (keyof AppState["daily"])[] = ["spot", "help", "step"];
+const PLAYED_KEYS: (keyof AppState["daily"])[] = ["puzzles", "spot", "help", "step"];
 
 /** Member and played-today counts, real or sample. */
 export function countsFor(state: AppState, live: LiveHood | null | undefined): { members: number; played: number; sample: boolean } {

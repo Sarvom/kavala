@@ -54,8 +54,27 @@ export interface SpotGuess {
   distance: number;
 }
 
+/** Kavala's daily logic puzzles. Web Weave and Pookkalam are on the daily path; Pakal–Raavu is a bonus. */
+export type PuzzleKind = "weave" | "pookkalam" | "pakal";
+export const CORE_PUZZLES: PuzzleKind[] = ["weave", "pookkalam"];
+export const PUZZLE_KINDS: PuzzleKind[] = ["weave", "pookkalam", "pakal"];
+
+export interface PuzzleResult {
+  /** False when the player skipped the puzzle today. */
+  solved: boolean;
+  timeMs: number;
+  points: number;
+}
+
 export interface DailyState {
   key: string;
+  /** Today's puzzles, finished or skipped. */
+  puzzles?: Partial<Record<PuzzleKind, PuzzleResult>>;
+  /** Unfinished puzzle boards, so closing a puzzle doesn't lose the work. */
+  puzzleWork?: Partial<Record<PuzzleKind, number[]>>;
+  /** When each puzzle was first opened, for its clock. */
+  puzzleStartedAt?: Partial<Record<PuzzleKind, number>>;
+  /** Spot (find a real place on the map) was retired from the daily on 25 October 2026; kept so older saved days still load. */
   spot?: SpotResult | "skipped";
   /** Guesses so far in today's Spot, kept so closing the game doesn't reset the tries. */
   spotGuesses?: SpotGuess[];
@@ -121,19 +140,20 @@ export function maskStyleOf(state: Pick<AppState, "maskStyle">): MaskStyle {
   return state.maskStyle ?? "classic";
 }
 
-export const MASK_COLORS = ["#1d6a4e", "#c58a12", "#3d6fa8", "#b4533a", "#7a5ba6", "#2e8c8c"];
+/** Mask colours from the Kavala palette: web blue, crimson, kasavu gold, leaf green, violet, teal. */
+export const MASK_COLORS = ["#0d63d6", "#e23636", "#c8961e", "#1e8550", "#6d4bc3", "#139e9b"];
 
 /** Sample neighbours shown in the demo. Clearly not real people. */
 export const SAMPLE_NEIGHBOURS: Record<string, string> = {
-  "Wanda Warrier": "#b4533a",
-  "Bruce Varghese": "#3d6fa8",
-  "Tony Thomas": "#c58a12",
-  "Steve Sebastian": "#2e8c8c",
-  "Natasha Nair": "#7a5ba6",
-  "Carol Chacko": "#1d6a4e",
-  "Clint Kurian": "#b4533a",
-  "Stephen Sankar": "#3d6fa8",
-  "Scott Mathew": "#2e8c8c",
+  "Wanda Warrier": "#e23636",
+  "Bruce Varghese": "#0d63d6",
+  "Tony Thomas": "#c8961e",
+  "Steve Sebastian": "#139e9b",
+  "Natasha Nair": "#6d4bc3",
+  "Carol Chacko": "#1e8550",
+  "Clint Kurian": "#e23636",
+  "Stephen Sankar": "#0d63d6",
+  "Scott Mathew": "#139e9b",
 };
 
 export const SAMPLE_PLAYED_TODAY = 38;
@@ -144,12 +164,19 @@ export interface BoardRow {
   me: boolean;
 }
 
-/** Today's leaderboard: the day's sample neighbours plus the player once they've played Spot. */
+/** Today's puzzle points (0 to 999), or null before any puzzle is solved. */
+export function dailyPoints(daily: DailyState): number | null {
+  const solved = PUZZLE_KINDS.map((k) => daily.puzzles?.[k]).filter((r): r is PuzzleResult => !!r && r.solved);
+  if (solved.length === 0) return null;
+  return Math.min(1000, solved.reduce((sum, r) => sum + r.points, 0));
+}
+
+/** Today's leaderboard: the day's sample neighbours plus the player once they've solved a puzzle. */
 export function leaderboard(state: AppState): BoardRow[] {
-  const spot = state.daily.spot && state.daily.spot !== "skipped" ? state.daily.spot : null;
+  const points = dailyPoints(state.daily);
   return [
     ...sampleBoard(state.daily.key).map((r) => ({ ...r, me: false })),
-    ...(spot ? [{ name: state.maskName, points: spot.points, me: true }] : []),
+    ...(points !== null ? [{ name: state.maskName, points, me: true }] : []),
   ].sort((a, b) => b.points - a.points);
 }
 export const SAMPLE_MEMBERS = 112;
@@ -295,10 +322,15 @@ export function nextStreak(lastKey: string | undefined, todayKey: string, streak
   return 1;
 }
 
-/** Marks the daily complete (and moves the streak) once all three games are finished. */
+/** Steps on today's path: the two core puzzles, Good Turn and Quest. */
+export function pathDone(d: DailyState): { weave: boolean; pookkalam: boolean; help: boolean; step: boolean } {
+  return { weave: !!d.puzzles?.weave, pookkalam: !!d.puzzles?.pookkalam, help: !!d.help, step: !!d.step };
+}
+
+/** Marks the daily complete (and moves the streak) once every step on the path is finished. */
 export function completeDaily(state: AppState): AppState {
   const d = state.daily;
-  if (d.done || !d.spot || !d.help || !d.step) return state;
+  if (d.done || !Object.values(pathDone(d)).every(Boolean)) return state;
   const streak = nextStreak(state.lastPlayedKey, d.key, state.streak);
   return {
     ...state,

@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { dailyNumber, type AppState } from "@/lib/app/state";
+import { dailyNumber, dailyPoints, pathDone, type AppState, type PuzzleKind } from "@/lib/app/state";
 import { boardFor, countsFor, type LiveHood } from "@/lib/app/live";
-import { spotSquare } from "@/lib/daily/score";
-import { GameIcon, formatTime } from "./GameKit";
 import { bonusFor, type BonusKind } from "@/lib/app/dailyContent";
-import { BONUS_GAMES, ChoiceGame, GoodTurnGame, QuestGame, SpotGame, SQUARE_EMOJI, useDailyPlace } from "./Games";
+import { BONUS_GAMES, ChoiceGame, GoodTurnGame, QuestGame } from "./Games";
+import { PakalGame, PookkalamGame, PUZZLE_META, WeaveGame } from "./Puzzles";
+import { Confetti, DoneMark, formatTime } from "./GameKit";
+import { GAME_COLORS, GameGlyph, Trophy, type GameKind } from "./Icons";
 import { Mask, NeighbourMask } from "./Mask";
 
-export type Game = "spot" | "help" | "quest" | BonusKind;
+export type Game = PuzzleKind | "help" | "quest" | BonusKind;
 
 const BONUS_KINDS: BonusKind[] = ["lingo", "quiz", "poll"];
 
@@ -19,6 +20,12 @@ function bonusMark(state: AppState, kind: BonusKind): string | null {
   if (!result) return null;
   const answer = bonusFor(kind, state.daily.key).answer;
   return !answer || result.pick === answer ? "✓" : "✗";
+}
+
+function puzzleLine(state: AppState, kind: PuzzleKind): string | null {
+  const r = state.daily.puzzles?.[kind];
+  if (!r) return null;
+  return r.solved ? formatTime(r.timeMs) : "–";
 }
 
 interface Props {
@@ -43,24 +50,25 @@ function countdown(ms: number): string {
   return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m`;
 }
 
-function spotSquares(state: AppState): string {
-  const spot = state.daily.spot && state.daily.spot !== "skipped" ? state.daily.spot : null;
-  if (!spot) return "–";
-  return (spot.tries ?? [spot.distance]).map((t) => SQUARE_EMOJI[spotSquare(t)]).join("");
-}
-
 export function shareText(state: AppState): string {
   const d = state.daily;
-  const spot = d.spot && d.spot !== "skipped" ? d.spot : null;
+  const points = dailyPoints(d);
+  const line = (kind: PuzzleKind) => {
+    const v = puzzleLine(state, kind);
+    return v ? `${PUZZLE_META[kind].emoji} ${PUZZLE_META[kind].name} ${v}` : "";
+  };
   return [
     `Kavala #${dailyNumber(d.key)}`,
-    `📍 Spot ${spotSquares(state)}${spot?.timeMs ? ` ${formatTime(spot.timeMs)}` : ""}`,
+    line("weave") || `${PUZZLE_META.weave.emoji} ${PUZZLE_META.weave.name} –`,
+    line("pookkalam") || `${PUZZLE_META.pookkalam.emoji} ${PUZZLE_META.pookkalam.name} –`,
+    line("pakal"),
     `🤝 Good Turn ${d.help && d.help !== "skipped" ? "✓" : "–"}`,
     `🌱 Quest ${d.step === "done" || d.step === "checked-in" ? "✓" : "–"}`,
     ...BONUS_KINDS.map((k) => {
       const mark = bonusMark(state, k);
       return mark ? `${BONUS_GAMES[k].emoji} ${BONUS_GAMES[k].name} ${mark}` : "";
     }),
+    points !== null ? `⭐ ${points} points` : "",
     state.streak > 1 ? `🔥 ${state.streak} day streak` : "",
     "Your friendly neighbourhood",
   ]
@@ -68,57 +76,58 @@ export function shareText(state: AppState): string {
     .join("\n");
 }
 
+const PATH_X = ["0px", "54px", "8px", "-50px"];
+
 export default function GameHub({ state, update, notify, game, setGame, live }: Props) {
   const [now, setNow] = useState(Date.now());
   const [canShare, setCanShare] = useState(false);
-  // Start loading today's Spot place as soon as the hub opens, so Spot opens instantly.
-  const [placeLoad, retryPlace] = useDailyPlace(state);
+  const [celebrate, setCelebrate] = useState(false);
+  const wasDone = useState(() => state.daily.done)[0];
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30_000);
     setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
     return () => clearInterval(t);
   }, []);
+  // Confetti the first time the hub shows a freshly completed daily.
+  useEffect(() => {
+    if (state.daily.done && !wasDone && game === null) setCelebrate(true);
+  }, [state.daily.done, wasDone, game]);
 
   const close = () => {
     setGame(null);
     window.scrollTo(0, 0);
   };
-  if (game === "spot") return <SpotGame state={state} update={update} onClose={close} load={placeLoad} retry={retryPlace} />;
+  if (game === "weave") return <WeaveGame state={state} update={update} onClose={close} />;
+  if (game === "pookkalam") return <PookkalamGame state={state} update={update} onClose={close} />;
+  if (game === "pakal") return <PakalGame state={state} update={update} onClose={close} />;
   if (game === "help") return <GoodTurnGame state={state} update={update} onClose={close} />;
-  if (game === "quest") return <QuestGame state={state} update={update} notify={notify} onClose={close} />;
+  if (game === "quest") return <QuestGame state={state} update={update} onClose={close} />;
   if (game === "lingo" || game === "quiz" || game === "poll") return <ChoiceGame kind={game} state={state} update={update} onClose={close} />;
 
   const d = state.daily;
-  const spot = d.spot && d.spot !== "skipped" ? d.spot : null;
+  const done = pathDone(d);
   const counts = countsFor(state, live);
-  const inProgress = !spot && d.spot !== "skipped" && (d.spotGuesses?.length ?? 0) > 0;
-
-  const tiles: { id: Game; name: string; tagline: string; color: string; status: string | null }[] = [
-    {
-      id: "spot",
-      name: "Spot",
-      tagline: inProgress ? `${3 - (d.spotGuesses?.length ?? 0)} guesses left` : "Find the place on the map",
-      color: "#3ddc97",
-      status: d.spot === "skipped" ? "Skipped" : spot ? `${spotSquares(state)}  ${formatTime(spot.timeMs ?? 0)}` : null,
-    },
-    {
-      id: "help",
-      name: "Good Turn",
-      tagline: "Help a neighbour out",
-      color: "#ffb833",
-      status: d.help ? `✓ ${formatTime(d.times?.help ?? 0)}` : null,
-    },
-    {
-      id: "quest",
-      name: "Quest",
-      tagline: "One small step outside",
-      color: "#b28cff",
-      status: d.step ? (d.step === "later" ? "Skipped today" : `✓ ${d.step === "checked-in" ? "Checked in" : "Done"}`) : null,
-    },
-  ];
-
-  const left = tiles.filter((t) => !t.status).length;
   const board = boardFor(state, live);
+  const points = dailyPoints(d);
+
+  const steps: { id: Game & GameKind; name: string; sub: string; finished: boolean }[] = [
+    {
+      id: "weave",
+      name: PUZZLE_META.weave.name,
+      sub: d.puzzles?.weave ? (d.puzzles.weave.solved ? `${formatTime(d.puzzles.weave.timeMs)} · ${d.puzzles.weave.points} pts` : "Skipped") : "Logic puzzle",
+      finished: done.weave,
+    },
+    {
+      id: "pookkalam",
+      name: PUZZLE_META.pookkalam.name,
+      sub: d.puzzles?.pookkalam ? (d.puzzles.pookkalam.solved ? `${formatTime(d.puzzles.pookkalam.timeMs)} · ${d.puzzles.pookkalam.points} pts` : "Skipped") : "Logic puzzle",
+      finished: done.pookkalam,
+    },
+    { id: "help", name: "Good Turn", sub: d.help ? "Helped a neighbour" : "Help a neighbour", finished: done.help },
+    { id: "quest", name: "Quest", sub: d.step ? (d.step === "later" ? "Skipped" : "Done") : "One small step", finished: done.step },
+  ];
+  const finishedCount = steps.filter((s) => s.finished).length;
+  const current = steps.find((s) => !s.finished)?.id;
 
   async function share() {
     const text = shareText(state);
@@ -138,86 +147,117 @@ export default function GameHub({ state, update, notify, game, setGame, live }: 
     }
   }
 
+  const pakal = d.puzzles?.pakal;
+  const bonusTiles: { id: Game & GameKind; name: string; tag: string; mark: string | null }[] = [
+    { id: "pakal", name: PUZZLE_META.pakal.name, tag: pakal ? (pakal.solved ? `${formatTime(pakal.timeMs)} · ${pakal.points} pts` : "Skipped") : PUZZLE_META.pakal.tagline, mark: pakal ? (pakal.solved ? "✓" : "–") : null },
+    ...BONUS_KINDS.map((k) => {
+      const mark = bonusMark(state, k);
+      return { id: k, name: BONUS_GAMES[k].name, tag: mark ? `${mark} ${formatTime(d.bonus?.[k]?.timeMs ?? 0)}` : BONUS_GAMES[k].tagline, mark };
+    }),
+  ];
+
   return (
     <div className="hub">
-      <header className="hub-head">
-        <div>
-          <span className="hub-kicker">Kavala Daily</span>
-          <span className="hub-number">#{dailyNumber(d.key)}</span>
+      {celebrate && <Confetti />}
+      <section className="daily-hero" aria-label={`Kavala Daily number ${dailyNumber(d.key)}`}>
+        <div className="hero-row">
+          <div>
+            <div className="hero-kicker">Kavala Daily</div>
+            <div className="hero-number">#{dailyNumber(d.key)}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div className="hero-ml" lang="ml">ഇന്നത്തെ കളി</div>
+            <div className="hero-count">Next in {countdown(msUntilNextDaily(d.key, now))}</div>
+          </div>
         </div>
-        <div className="streak" aria-label={`${state.streak} day streak`}>
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-4-1-6 1-9z" fill="#ffb833" />
-          </svg>
-          <b>{state.streak}</b>
+        <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={4} aria-valuenow={finishedCount}>
+          <i style={{ "--pct": `${(finishedCount / 4) * 100}%`, "--fill": "var(--gold)" } as React.CSSProperties} />
         </div>
-      </header>
+        <div className="hero-row">
+          <span className="hero-left">{d.done ? "Daily complete" : finishedCount === 0 ? "Four steps · about five minutes" : `${4 - finishedCount} to go`}</span>
+          <span className="hero-count">
+            {counts.played} played today {counts.sample && <span className="tag">sample</span>}
+          </span>
+        </div>
+        <div className="kasavu" aria-hidden="true" />
+      </section>
 
-      {d.done ? (
+      {d.done && (
         <section className="complete">
+          <Trophy />
           <span className="complete-word">Daily complete!</span>
+          <span className="complete-ml" lang="ml">കൊള്ളാം!</span>
+          {points !== null && <span className="chip gold" style={{ justifySelf: "center" }}>⭐ {points} points today</span>}
           <pre className="share-box">{shareText(state)}</pre>
           <div className="two-col">
             <button className="btn ghost" onClick={share}>{canShare ? "Share" : "Copy"}</button>
-            <a className="btn" href={`https://wa.me/?text=${encodeURIComponent(shareText(state))}`} target="_blank" rel="noopener noreferrer">
+            <a className="btn green" href={`https://wa.me/?text=${encodeURIComponent(shareText(state))}`} target="_blank" rel="noopener noreferrer">
               WhatsApp
             </a>
           </div>
-          <span className="muted">Next daily in {countdown(msUntilNextDaily(d.key, now))}</span>
         </section>
-      ) : (
-        <p className="hub-left">{left === 3 ? "Three small games. About two minutes." : `${left} to go`}</p>
       )}
 
-      <div className="tiles">
-        {tiles.map((t) => (
-          <button key={t.id} className={`tile ${t.status ? "done" : ""}`} style={{ "--tile": t.color } as React.CSSProperties} onClick={() => setGame(t.id)}>
-            <span className="tile-icon"><GameIcon kind={t.id} /></span>
-            <span className="tile-text">
-              <span className="tile-name">{t.name}</span>
-              <span className="tile-tag">{t.status ?? t.tagline}</span>
-            </span>
-            <span className="tile-cta">{t.status ? "View" : inProgress && t.id === "spot" ? "Resume" : "Play"}</span>
-          </button>
-        ))}
+      <div className="section-head">
+        <span className="section-title">Today&apos;s path</span>
+        <span className="section-ml" lang="ml">ഇന്നത്തെ വഴി</span>
       </div>
-      <p className="hub-played">
-        {counts.played} {counts.played === 1 ? "neighbour" : "neighbours"} played today {counts.sample && <span className="tag">sample</span>}
-      </p>
-
-      <div className="bonus-head">
-        <span className="bonus-title">Bonus games</span>
-        <span className="muted">Just for fun. They don&apos;t affect your streak.</span>
-      </div>
-      <div className="tiles bonus">
-        {BONUS_KINDS.map((k) => {
-          const meta = BONUS_GAMES[k];
-          const mark = bonusMark(state, k);
+      <ol className="path">
+        {steps.map((s, i) => {
+          const c = GAME_COLORS[s.id];
+          const isCurrent = s.id === current;
           return (
-            <button key={k} className={`tile ${mark ? "done" : ""}`} style={{ "--tile": meta.color } as React.CSSProperties} onClick={() => setGame(k)}>
-              <span className="tile-icon"><GameIcon kind={k} /></span>
-              <span className="tile-text">
-                <span className="tile-name">{meta.name}</span>
-                <span className="tile-tag">{mark ? `${mark} ${formatTime(d.bonus?.[k]?.timeMs ?? 0)}` : meta.tagline}</span>
-              </span>
-              <span className="tile-cta">{mark ? "View" : "Play"}</span>
+            <li key={s.id} style={{ "--x": PATH_X[i] } as React.CSSProperties}>
+              {isCurrent && <span className="start-bubble" style={{ "--face": c.face } as React.CSSProperties}>{finishedCount === 0 ? "Start" : "Next"}</span>}
+              <button
+                className={`node ${s.finished ? "done" : ""} ${isCurrent ? "current" : ""}`}
+                style={{ "--face": c.face, "--deep": c.deep } as React.CSSProperties}
+                onClick={() => setGame(s.id)}
+                aria-label={`${s.name}: ${s.finished ? "finished" : "play"}`}
+              >
+                <GameGlyph kind={s.id} />
+                {s.finished && <DoneMark />}
+              </button>
+              <span className="node-label">{s.name}</span>
+              <span className="node-sub">{s.sub}</span>
+            </li>
+          );
+        })}
+      </ol>
+
+      <div className="section-head">
+        <span className="section-title">More to play</span>
+        <span className="section-ml">Just for fun · won&apos;t affect your streak</span>
+      </div>
+      <div className="tile-grid">
+        {bonusTiles.map((t) => {
+          const c = GAME_COLORS[t.id];
+          return (
+            <button key={t.id} className="tile" style={{ "--face": c.face, "--deep": c.deep } as React.CSSProperties} onClick={() => setGame(t.id)}>
+              <span className="tile-icon"><GameGlyph kind={t.id} /></span>
+              <span className="tile-name">{t.name}</span>
+              <span className="tile-tag">{t.tag}</span>
+              {t.mark && <span className="done-mark chip">{t.mark}</span>}
             </button>
           );
         })}
       </div>
-      <section className="board-card">
-        <span className="board-title">Today&apos;s leaderboard {board.sample && <span className="tag">sample</span>}</span>
+
+      <section className="card board-card">
+        <div className="section-head">
+          <h2>Today&apos;s leaderboard {board.sample && <span className="tag">sample</span>}</h2>
+        </div>
         <ol className="board">
           {board.rows.map((r, i) => (
             <li key={r.name} className={r.me ? "me" : ""}>
               <span className="rank">{i + 1}</span>
-              {r.color && r.style ? <Mask color={r.color} style={r.style} size={28} /> : <NeighbourMask name={r.name} me={state} size={28} />}
+              {r.color && r.style ? <Mask color={r.color} style={r.style} size={30} /> : <NeighbourMask name={r.name} me={state} size={30} />}
               <span>{r.me ? `${r.name} (you)` : r.name}</span>
               <span className="pts">{r.points}</span>
             </li>
           ))}
         </ol>
-        {!spot && <span className="muted">Play Spot to get on the board.</span>}
+        {points === null && <span className="muted">Solve a puzzle to get on the board.</span>}
       </section>
     </div>
   );

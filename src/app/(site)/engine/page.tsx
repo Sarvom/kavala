@@ -38,9 +38,10 @@ export default function Engine() {
       <section className="card">
         <h2>What this version does not do yet</h2>
         <p className="muted">
-          No accounts or saved data on a server yet: the app experience keeps your progress in this browser and uses sample
-          neighbours. Accounts and the database arrive in the next phase of the build guide. The location debug page needs HTTPS to read GPS on a phone, so test it on the Vercel link rather than
-          over your home Wi-Fi address.
+          Accounts and saved progress need the Supabase keys and migrations; without them the app keeps progress in this browser and shows
+          labelled sample neighbours until a neighbourhood has five real players. Handshake nonces are still kept in memory. The daily
+          puzzles are generated on each phone from the date, so everyone gets the same puzzle without a server. The location debug page
+          needs HTTPS to read GPS on a phone, so test it on the Vercel link rather than over your home Wi-Fi address.
         </p>
       </section>
     </>
