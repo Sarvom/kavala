@@ -137,3 +137,21 @@ describe("account linking", () => {
     expect(linkAccount(google, null).level).toBe("masked");
   });
 });
+
+describe("puzzle points in the snapshot", () => {
+  it("sends today's points and nothing from the boards", async () => {
+    const s = joined();
+    s.daily = { key: "2026-10-25", done: false, puzzles: { weave: { solved: true, timeMs: 42_000, points: 319 } }, puzzleWork: { pookkalam: [3, 10, 17] } };
+    const snap = toSnapshot(s)!;
+    expect(snap.daily.points).toBe(319);
+    expect(JSON.stringify(snap)).not.toContain("puzzleWork");
+    expect(validateSnapshot({ ...snap, daily: { ...snap.daily, points: 1001 } })).toMatchObject({ ok: false, error: /daily.points/ });
+  });
+
+  it("reads points back from a database row, with or without migration 0004", () => {
+    const user = { mask_name: "Gwen George", mask_color: "#1d6a4e", mask_style: "web", home_cell: home, home_from_gps: true, neighbourhood_id: null, trust_level: "masked", thanks: 0, streak: 0, best_streak: 0, last_played_on: null };
+    const play = { day: "2026-10-25", spot_points: null, spot_distance_m: null, spot_skipped: false, help: null, step: null, done: false };
+    expect(rowsToSnapshot(user, null, { ...play, puzzle_points: 640 }, "2026-10-25").daily.points).toBe(640);
+    expect(rowsToSnapshot(user, null, play, "2026-10-25").daily.points).toBeUndefined();
+  });
+});

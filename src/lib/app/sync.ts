@@ -1,15 +1,18 @@
 import { getResolution, isValidCell } from "h3-js";
 import { HOME_RESOLUTION } from "../geo/resolution";
-import { MASK_STYLES, type AppState, type DailyState, type MaskStyle, type TrustLevel } from "./state";
+import { dailyPoints, MASK_STYLES, type AppState, type DailyState, type MaskStyle, type TrustLevel } from "./state";
 
 /**
  * What the phone sends to /api/me and gets back: the profile and today's
  * results, with nothing that could place a person more precisely than their
- * resolution-9 home cell. Spot guesses (map taps) stay on the phone; only the
- * best distance and the points travel.
+ * resolution-9 home cell. Puzzle boards stay on the phone; only today's
+ * points travel. The Spot fields remain for days played before Spot was
+ * retired (its guesses never left the phone either).
  */
 export interface DailySnapshot {
   key: string;
+  /** Today's puzzle points, 0 to 1000. */
+  points?: number;
   spotPoints?: number;
   spotDistanceM?: number;
   spotSkipped: boolean;
@@ -37,6 +40,7 @@ export function dailySnapshot(d: DailyState): DailySnapshot {
   const spot = d.spot && d.spot !== "skipped" ? d.spot : undefined;
   return {
     key: d.key,
+    points: dailyPoints(d) ?? undefined,
     spotPoints: spot?.points,
     spotDistanceM: spot ? Math.round(spot.distance) : undefined,
     spotSkipped: d.spot === "skipped",
@@ -139,6 +143,7 @@ export function validateSnapshot(body: unknown): SnapshotCheck {
   const d = b.daily as Record<string, unknown> | undefined;
   if (typeof d !== "object" || d === null) return { ok: false, error: "daily is required." };
   if (typeof d.key !== "string" || !DAY_KEY.test(d.key)) return { ok: false, error: "daily.key must be YYYY-MM-DD." };
+  if (d.points !== undefined && !isCount(d.points, 1000)) return { ok: false, error: "daily.points must be 0 to 1000." };
   if (d.spotPoints !== undefined && !isCount(d.spotPoints, 1000)) return { ok: false, error: "daily.spotPoints must be 0 to 1000." };
   if (d.spotDistanceM !== undefined && !isCount(d.spotDistanceM, 100_000)) return { ok: false, error: "daily.spotDistanceM must be a whole number of metres." };
   if (typeof d.spotSkipped !== "boolean") return { ok: false, error: "daily.spotSkipped must be true or false." };
@@ -162,6 +167,7 @@ export function validateSnapshot(body: unknown): SnapshotCheck {
       lastPlayedKey: b.lastPlayedKey as string | undefined,
       daily: {
         key: d.key,
+        points: d.points as number | undefined,
         spotPoints: d.spotPoints as number | undefined,
         spotDistanceM: d.spotDistanceM as number | undefined,
         spotSkipped: d.spotSkipped,
@@ -190,6 +196,8 @@ export interface UserRow {
 
 export interface DailyPlayRow {
   day: string;
+  /** Added in migration 0004; missing on databases that haven't applied it. */
+  puzzle_points?: number | null;
   spot_points: number | null;
   spot_distance_m: number | null;
   spot_skipped: boolean;
@@ -221,6 +229,7 @@ export function rowsToSnapshot(user: UserRow, hood: HoodRow | null, play: DailyP
     daily: play
       ? {
           key: play.day,
+          points: play.puzzle_points ?? undefined,
           spotPoints: play.spot_points ?? undefined,
           spotDistanceM: play.spot_distance_m ?? undefined,
           spotSkipped: play.spot_skipped,

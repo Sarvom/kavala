@@ -7,7 +7,7 @@ function played(points: number): AppState {
   return {
     ...s,
     maskName: "Gwen George",
-    daily: { ...s.daily, spot: { place: { id: "p", name: "Cafe", kind: "cafe", lat: 0, lng: 0 }, distance: 50, points, square: "green" } },
+    daily: { ...s.daily, puzzles: { weave: { solved: true, timeMs: 30_000, points } } },
   };
 }
 

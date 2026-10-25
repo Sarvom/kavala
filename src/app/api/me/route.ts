@@ -6,6 +6,7 @@ import { serverSupabase } from "@/lib/supabase/server";
 import { userFromRequest } from "@/lib/supabase/auth";
 import { dailyKey } from "@/lib/daily/score";
 import { assignOnServer, recountOnServer, type HoodRecord } from "@/lib/hood/server";
+import { isMissingColumn } from "@/lib/supabase/errors";
 
 /**
  * A signed-in phone's saved profile and today's results.
@@ -65,7 +66,8 @@ async function loadSnapshot(db: SupabaseClient, authUserId: string, day: string)
     user.neighbourhood_id
       ? db.from("neighbourhoods").select("id, cells, resolution").eq("id", user.neighbourhood_id).maybeSingle<HoodRow>()
       : Promise.resolve({ data: null, error: null }),
-    db.from("daily_plays").select("day, spot_points, spot_distance_m, spot_skipped, help, step, done").eq("user_id", user.id).eq("day", day).maybeSingle<DailyPlayRow>(),
+    // "*" so databases without migration 0004 (no puzzle_points yet) still load.
+    db.from("daily_plays").select("*").eq("user_id", user.id).eq("day", day).maybeSingle<DailyPlayRow>(),
   ]);
   if (hoodRes.error) return { error: `Database error: ${hoodRes.error.message}` };
   if (playRes.error) return { error: `Database error: ${playRes.error.message}` };
@@ -129,20 +131,22 @@ async function saveSnapshot(db: SupabaseClient, user: User, snap: ProfileSnapsho
   }
 
   const d = snap.daily;
-  const { error: playError } = await db.from("daily_plays").upsert(
-    {
-      user_id: saved.id,
-      day: d.key,
-      spot_points: d.spotPoints ?? null,
-      spot_distance_m: d.spotDistanceM ?? null,
-      spot_skipped: d.spotSkipped,
-      help: d.help ?? null,
-      step: d.step ?? null,
-      done: d.done,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id,day" },
-  );
+  const play = {
+    user_id: saved.id,
+    day: d.key,
+    spot_points: d.spotPoints ?? null,
+    spot_distance_m: d.spotDistanceM ?? null,
+    spot_skipped: d.spotSkipped,
+    help: d.help ?? null,
+    step: d.step ?? null,
+    done: d.done,
+    updated_at: new Date().toISOString(),
+  };
+  let { error: playError } = await db.from("daily_plays").upsert({ ...play, puzzle_points: d.points ?? null }, { onConflict: "user_id,day" });
+  if (playError && isMissingColumn(playError, "puzzle_points")) {
+    // Migration 0004 not applied yet: save everything else so progress isn't lost.
+    ({ error: playError } = await db.from("daily_plays").upsert(play, { onConflict: "user_id,day" }));
+  }
   if (playError) return { error: `Database error: ${playError.message}` };
   return { hood };
 }

@@ -157,12 +157,15 @@ describe("linkAccount", () => {
 });
 
 describe("completeDaily", () => {
-  it("completes only when all three games are finished, and counts the streak once", async () => {
+  it("completes only when every step on the path is finished, and counts the streak once", async () => {
     const { completeDaily } = await import("./state");
     const base = initialState("2026-10-25", NOW);
-    const partial = { ...base, daily: { ...base.daily, help: "marked" as const, step: "done" as const } };
+    const partial = { ...base, daily: { ...base.daily, help: "marked" as const, step: "done" as const, puzzles: { weave: { solved: true, timeMs: 40_000, points: 320 } } } };
     expect(completeDaily(partial)).toBe(partial);
-    const full = { ...partial, daily: { ...partial.daily, spot: "skipped" as const } };
+    // Retired Spot results don't count toward the path.
+    const withSpot = { ...partial, daily: { ...partial.daily, spot: "skipped" as const } };
+    expect(completeDaily(withSpot)).toBe(withSpot);
+    const full = { ...partial, daily: { ...partial.daily, puzzles: { ...partial.daily.puzzles, pookkalam: { solved: false, timeMs: 0, points: 0 } } } };
     const done = completeDaily(full);
     expect(done.daily.done).toBe(true);
     expect(done.streak).toBe(1);
@@ -178,7 +181,13 @@ describe("completeDaily", () => {
       streak: 6,
       bestStreak: 6,
       lastPlayedKey: "2026-11-01",
-      daily: { key: "2026-11-10", done: false, spot: "skipped", help: "marked", step: "done" },
+      daily: {
+        key: "2026-11-10",
+        done: false,
+        puzzles: { weave: { solved: true, timeMs: 1000, points: 333 }, pookkalam: { solved: true, timeMs: 1000, points: 333 } },
+        help: "marked",
+        step: "done",
+      },
     };
     const done = completeDaily(s);
     expect(done.streak).toBe(1);
@@ -257,6 +266,18 @@ describe("bonus games", () => {
       expect(poll.answer).toBeUndefined();
       expect(poll.choices.reduce((sum, c) => sum + (c.picked ?? 0), 0)).toBe(100);
     }
+  });
+
+  it("adds up puzzle points, skipping skipped puzzles", async () => {
+    const { dailyPoints } = await import("./state");
+    expect(dailyPoints({ key: "2026-10-25", done: false })).toBeNull();
+    expect(
+      dailyPoints({
+        key: "2026-10-25",
+        done: false,
+        puzzles: { weave: { solved: true, timeMs: 1, points: 300 }, pookkalam: { solved: false, timeMs: 0, points: 0 }, pakal: { solved: true, timeMs: 1, points: 250 } },
+      }),
+    ).toBe(550);
   });
 
   it("doesn't change whether the daily is complete", () => {
