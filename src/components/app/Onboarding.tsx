@@ -93,7 +93,6 @@ export default function Onboarding({ state, update, notify, google }: Props) {
       <section className="onboard">
         {dots}
         <h1 className="onboard-title">Who are you today?</h1>
-        <p className="onboard-ml" lang="ml">നിങ്ങൾ ആരാണ്?</p>
         <button className="path-card profile" onClick={google.available ? google.signIn : undefined} disabled={!google.available || google.busy}>
           <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true">
             {googleIconPaths().map((p) => (
@@ -118,7 +117,6 @@ export default function Onboarding({ state, update, notify, google }: Props) {
       <section className="onboard">
         {dots}
         <h1 className="onboard-title">Choose your mask</h1>
-        <p className="onboard-ml" lang="ml">നിങ്ങളുടെ മുഖംമൂടി</p>
         <div className="mask-stage">
           <button className="arrow" aria-label="Previous mask" onClick={() => cycle(-1)}>‹</button>
           <div className="mask-hero">
@@ -159,7 +157,6 @@ export default function Onboarding({ state, update, notify, google }: Props) {
     <section className="onboard">
       {dots}
       <h1 className="onboard-title">Drop into your neighbourhood</h1>
-      <p className="onboard-ml" lang="ml">നിങ്ങളുടെ അയൽപക്കം</p>
       {home && hood ? (
         <>
           <HexMap center={[KOCHI_CENTRE.lat, KOCHI_CENTRE.lng]} zoom={13} shapes={shapes} fit height={260} />

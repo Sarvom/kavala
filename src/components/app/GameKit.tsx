@@ -24,10 +24,9 @@ export function useElapsed(running: boolean, startedAt?: number): number {
   return Math.max(0, now - (startedAt ?? opened.current));
 }
 
-/** The frame every game shares: close button, title (with its Malayalam name) and a clock. */
+/** The frame every game shares: close button, title and a clock. */
 export function GameFrame({
   title,
-  ml,
   accent,
   accentDeep,
   elapsed,
@@ -35,7 +34,6 @@ export function GameFrame({
   children,
 }: {
   title: string;
-  ml?: string;
   accent: string;
   accentDeep: string;
   elapsed?: number;
@@ -50,7 +48,6 @@ export function GameFrame({
         </button>
         <span className="game-title">
           {title}
-          {ml && <span className="ml" lang="ml">{ml}</span>}
         </span>
         {elapsed !== undefined && (
           <span className="game-clock" aria-label="Time">

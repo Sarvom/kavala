@@ -106,7 +106,8 @@ export default function KavalaApp() {
           {!playing && (
             <header className="app-top">
               <span className="app-brand">
-                <img src="/brand/kavala-mark-light.webp" alt="" width={36} height={36} />
+                <img className="logo-on-light" src="/brand/kavala-mark-light.webp" alt="" width={36} height={36} />
+                <img className="logo-on-dark" src="/brand/kavala-mark-dark.webp" alt="" width={36} height={31} />
                 Kavala
               </span>
               <span className="stat-pill streak" aria-label={`${state.streak} day streak`} title="Day streak">

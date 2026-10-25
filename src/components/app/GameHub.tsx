@@ -166,7 +166,7 @@ export default function GameHub({ state, update, notify, game, setGame, live }: 
             <div className="hero-number">#{dailyNumber(d.key)}</div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div className="hero-ml" lang="ml">ഇന്നത്തെ കളി</div>
+            <div className="hero-kicker">Today</div>
             <div className="hero-count">Next in {countdown(msUntilNextDaily(d.key, now))}</div>
           </div>
         </div>
@@ -186,7 +186,6 @@ export default function GameHub({ state, update, notify, game, setGame, live }: 
         <section className="complete">
           <Trophy />
           <span className="complete-word">Daily complete!</span>
-          <span className="complete-ml" lang="ml">കൊള്ളാം!</span>
           {points !== null && <span className="chip gold" style={{ justifySelf: "center" }}>⭐ {points} points today</span>}
           <pre className="share-box">{shareText(state)}</pre>
           <div className="two-col">
@@ -200,7 +199,7 @@ export default function GameHub({ state, update, notify, game, setGame, live }: 
 
       <div className="section-head">
         <span className="section-title">Today&apos;s path</span>
-        <span className="section-ml" lang="ml">ഇന്നത്തെ വഴി</span>
+        <span className="section-ml">{4 - finishedCount === 0 ? "All done" : `${finishedCount} of 4 done`}</span>
       </div>
       <ol className="path">
         {steps.map((s, i) => {
