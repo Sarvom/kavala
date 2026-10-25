@@ -7,6 +7,7 @@ import type { SaveStatus } from "@/lib/app/useCloudSave";
 import { Mask, NeighbourMask } from "./Mask";
 import GoogleButton from "./GoogleButton";
 import { Coin, Flame } from "./Icons";
+import { useTheme } from "@/lib/app/theme";
 
 interface Props {
   state: AppState;
@@ -29,6 +30,7 @@ const REGULARS = ["Carol Chacko", "Tony Thomas", "Wanda Warrier"];
 
 export default function MeView({ state, update, notify, onReset, google, saveStatus }: Props) {
   const [confirmReset, setConfirmReset] = useState(false);
+  const [theme, setTheme] = useTheme();
   const verified = state.level === "verified";
   const signedInWithGoogle = state.account?.provider === "google";
 
@@ -40,8 +42,8 @@ export default function MeView({ state, update, notify, onReset, google, saveSta
   return (
     <>
       <div className="page-head">
+        <span className="eyebrow">Your profile</span>
         <h1 className="flow-title">Me</h1>
-        <span className="ml" lang="ml">ഞാൻ</span>
       </div>
       <div className="card center-card">
         <span className="mask-plate"><Mask color={state.maskColor} style={maskStyleOf(state)} size={96} /></span>
@@ -110,9 +112,18 @@ export default function MeView({ state, update, notify, onReset, google, saveSta
       <p className="muted center">Miss a day and your streak waits for you. Miss two and it starts again.</p>
 
       <section className="card">
+        <h2>Appearance</h2>
+        <div className="two-col" role="group" aria-label="Theme">
+          <button className={`btn ${theme === "dark" ? "blue" : "ghost"}`} aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}>Dark</button>
+          <button className={`btn ${theme === "light" ? "blue" : "ghost"}`} aria-pressed={theme === "light"} onClick={() => setTheme("light")}>Light</button>
+        </div>
+        <p className="muted">Saved on this phone.</p>
+      </section>
+
+      <section className="card">
         <div className="section-head">
           <h2>Trust ladder</h2>
-          <span className="section-ml" lang="ml">വിശ്വാസത്തിന്റെ പടവുകൾ</span>
+          <span className="section-ml">Unlock more as neighbours trust you</span>
         </div>
         <ol className="ladder">
           <li className={verified ? "done" : "current"}>
@@ -206,7 +217,8 @@ export default function MeView({ state, update, notify, onReset, google, saveSta
         )}
       </section>
       <div className="brand-foot">
-        <img src="/brand/trying-to-do-better-light.webp" alt="Trying to Do Better" width={68} height={56} />
+        <img className="logo-on-light" src="/brand/trying-to-do-better-light.webp" alt="Trying to Do Better" width={68} height={56} />
+        <img className="logo-on-dark" src="/brand/trying-to-do-better-dark.webp" alt="Trying to Do Better" width={68} height={56} />
         <span className="fine">Kavala is a Trying to Do Better project.</span>
       </div>
     </>

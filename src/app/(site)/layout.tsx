@@ -3,7 +3,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="shell">
       <header className="topbar">
-        <a href="/" className="wordmark"><img src="/brand/kavala-mark-light.webp" alt="" width={34} height={34} />Kavala</a>
+        <a href="/" className="wordmark"><img className="logo-on-light" src="/brand/kavala-mark-light.webp" alt="" width={34} height={34} /><img className="logo-on-dark" src="/brand/kavala-mark-dark.webp" alt="" width={34} height={29} />Kavala</a>
         <nav aria-label="Main">
           <a href="/">Play</a>
           <a href="/engine">Engine</a>
@@ -13,7 +13,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         </nav>
       </header>
       <main>{children}</main>
-      <footer className="foot"><img src="/brand/trying-to-do-better-mark-light.webp" alt="" width={28} height={28} />Kavala by Trying to Do Better · maps &copy; OpenStreetMap contributors</footer>
+      <footer className="foot"><img className="logo-on-light" src="/brand/trying-to-do-better-mark-light.webp" alt="" width={28} height={28} /><img className="logo-on-dark" src="/brand/trying-to-do-better-mark-dark.webp" alt="" width={28} height={28} />Kavala by Trying to Do Better · maps &copy; OpenStreetMap contributors</footer>
     </div>
   );
 }

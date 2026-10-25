@@ -34,7 +34,7 @@ export default function HoodView({ state, live }: { state: AppState; live: LiveH
   return (
     <>
       <div className="page-head">
-        <span className="ml" lang="ml">അയൽപക്കം</span>
+        <span className="eyebrow">Neighbourhood</span>
         <h1 className="flow-title">Your kavala</h1>
         <p className="muted">
           H3 resolution {hood.resolution}, {AREA[hood.resolution] ?? "a small area"}. It shrinks where homes are dense and grows where they

@@ -12,10 +12,10 @@ import { Flower, MoonPiece, SunPiece, GAME_COLORS } from "./Icons";
 
 type Update = (fn: (s: AppState) => AppState) => void;
 
-export const PUZZLE_META: Record<PuzzleKind, { name: string; ml: string; tagline: string; emoji: string }> = {
-  weave: { name: "Web Weave", ml: "വല", tagline: "One thread through every square", emoji: "🕸️" },
-  pookkalam: { name: "Pookkalam", ml: "പൂക്കളം", tagline: "One flower per row, column and colour", emoji: "🌼" },
-  pakal: { name: "Pakal–Raavu", ml: "പകൽ–രാവ്", tagline: "Balance the suns and moons", emoji: "🌗" },
+export const PUZZLE_META: Record<PuzzleKind, { name: string; tagline: string; emoji: string }> = {
+  weave: { name: "Web Weave", tagline: "One thread through every square", emoji: "🕸️" },
+  pookkalam: { name: "Pookkalam", tagline: "One flower per row, column and colour", emoji: "🌼" },
+  pakal: { name: "Pakal–Raavu", tagline: "Balance the suns and moons", emoji: "🌗" },
 };
 
 /** Shared puzzle plumbing: the saved board, the clock, finishing and skipping. */
@@ -128,7 +128,7 @@ export function WeaveGame({ state, update, onClose }: { state: AppState; update:
   const points = path.map((c) => `${(c % n) + 0.5},${Math.floor(c / n) + 0.5}`).join(" ");
 
   return (
-    <GameFrame title={PUZZLE_META.weave.name} ml={PUZZLE_META.weave.ml} accent={colors.face} accentDeep={colors.deep} elapsed={elapsed} onClose={onClose}>
+    <GameFrame title={PUZZLE_META.weave.name} accent={colors.face} accentDeep={colors.deep} elapsed={elapsed} onClose={onClose}>
       <div className="rules">
         <span>Start at 1</span>
         <span>Pass every number in order</span>
@@ -228,7 +228,7 @@ export function PookkalamGame({ state, update, onClose }: { state: AppState; upd
   }
 
   return (
-    <GameFrame title={PUZZLE_META.pookkalam.name} ml={PUZZLE_META.pookkalam.ml} accent={colors.face} accentDeep={colors.deep} elapsed={elapsed} onClose={onClose}>
+    <GameFrame title={PUZZLE_META.pookkalam.name} accent={colors.face} accentDeep={colors.deep} elapsed={elapsed} onClose={onClose}>
       <div className="rules">
         <span>One flower per row</span>
         <span>…per column</span>
@@ -300,7 +300,7 @@ export function PakalGame({ state, update, onClose }: { state: AppState; update:
   }
 
   return (
-    <GameFrame title={PUZZLE_META.pakal.name} ml={PUZZLE_META.pakal.ml} accent={colors.face} accentDeep={colors.deep} elapsed={elapsed} onClose={onClose}>
+    <GameFrame title={PUZZLE_META.pakal.name} accent={colors.face} accentDeep={colors.deep} elapsed={elapsed} onClose={onClose}>
       <div className="rules">
         <span>3 suns + 3 moons per line</span>
         <span>No 3 alike in a row</span>

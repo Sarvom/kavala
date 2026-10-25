@@ -39,7 +39,7 @@ export function GoodTurnGame({ state, update, onClose }: { state: AppState; upda
   }
 
   return (
-    <GameFrame title="Good Turn" ml="ഒരു സഹായം" accent={colors.face} accentDeep={colors.deep} elapsed={state.daily.times?.help ?? elapsed} onClose={onClose}>
+    <GameFrame title="Good Turn" accent={colors.face} accentDeep={colors.deep} elapsed={state.daily.times?.help ?? elapsed} onClose={onClose}>
       <div className="speech">
         <NeighbourMask name={turn.asker} me={state} size={52} />
         <div className="bubble">
@@ -126,7 +126,7 @@ export function QuestGame({ state, update, onClose }: { state: AppState; update:
   }
 
   return (
-    <GameFrame title="Quest" ml="ഒരു ചുവട്" accent={colors.face} accentDeep={colors.deep} elapsed={state.daily.times?.step ?? elapsed} onClose={onClose}>
+    <GameFrame title="Quest" accent={colors.face} accentDeep={colors.deep} elapsed={state.daily.times?.step ?? elapsed} onClose={onClose}>
       <p className="game-note">One small step in the real world today.</p>
       <div className="card quest-card">
         {quest.neighbour ? (
@@ -156,11 +156,11 @@ export function QuestGame({ state, update, onClose }: { state: AppState; update:
   );
 }
 
-/** Names, Malayalam names and win words for the bonus games. */
-export const BONUS_GAMES: Record<BonusKind, { name: string; ml: string; tagline: string; ask: string; win: string; emoji: string }> = {
-  lingo: { name: "Lingo", ml: "വാക്ക്", tagline: "One Malayalam word a day", ask: "What does this word mean?", win: "Sharp!", emoji: "🔤" },
-  quiz: { name: "Kochi Quiz", ml: "ചോദ്യം", tagline: "One question about the city", ask: "Pick one answer.", win: "Correct!", emoji: "❓" },
-  poll: { name: "Hood Poll", ml: "അഭിപ്രായം", tagline: "Say what you think", ask: "Tap your answer to see how neighbours voted.", win: "Voted!", emoji: "📊" },
+/** Names and win words for the bonus games. */
+export const BONUS_GAMES: Record<BonusKind, { name: string; tagline: string; ask: string; win: string; emoji: string }> = {
+  lingo: { name: "Lingo", tagline: "One Malayalam word a day", ask: "What does this word mean?", win: "Sharp!", emoji: "🔤" },
+  quiz: { name: "Kochi Quiz", tagline: "One question about the city", ask: "Pick one answer.", win: "Correct!", emoji: "❓" },
+  poll: { name: "Hood Poll", tagline: "Say what you think", ask: "Tap your answer to see how neighbours voted.", win: "Voted!", emoji: "📊" },
 };
 
 /** Lingo, Kochi Quiz and Hood Poll: one tap, then the answer or the poll result. */
@@ -179,7 +179,7 @@ export function ChoiceGame({ kind, state, update, onClose }: { kind: BonusKind; 
   }
 
   return (
-    <GameFrame title={meta.name} ml={meta.ml} accent={colors.face} accentDeep={colors.deep} elapsed={result?.timeMs ?? elapsed} onClose={onClose}>
+    <GameFrame title={meta.name} accent={colors.face} accentDeep={colors.deep} elapsed={result?.timeMs ?? elapsed} onClose={onClose}>
       <div className="clue-card">
         <span className="clue-label">{kind === "poll" ? "Today's poll" : kind === "lingo" ? "Today's word" : "Today's question"}</span>
         <span className={`clue-name ${kind === "lingo" ? "ml" : "long"}`} lang={kind === "lingo" ? "ml" : undefined}>{round.prompt}</span>

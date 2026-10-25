@@ -275,8 +275,8 @@ export function SunPiece() {
 export function MoonPiece() {
   return (
     <svg viewBox="0 0 40 40" aria-hidden="true">
-      <path d="M27 6.5a14 14 0 1 0 7.5 22A11 11 0 0 1 27 6.5z" fill="#06142b" transform="translate(0 1.5)" />
-      <path d="M27 6.5a14 14 0 1 0 7.5 22A11 11 0 0 1 27 6.5z" fill="#1d4f9c" />
+      <path d="M27 6.5a14 14 0 1 0 7.5 22A11 11 0 0 1 27 6.5z" style={{ fill: "var(--moon-deep)" }} transform="translate(0 1.5)" />
+      <path d="M27 6.5a14 14 0 1 0 7.5 22A11 11 0 0 1 27 6.5z" style={{ fill: "var(--moon)" }} />
       <circle cx="15" cy="17" r="2" fill="#ffffff" opacity="0.35" />
       <circle cx="19" cy="26" r="1.4" fill="#ffffff" opacity="0.3" />
     </svg>

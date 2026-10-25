@@ -11,7 +11,6 @@ export default function Splash({ returning, name, onEnter }: { returning: boolea
         <div className="splash-hero">
           <img className="splash-emblem" src="/brand/kavala-emblem-3d.webp" alt="Kavala emblem" width={260} height={260} />
           <h1 className="splash-word">KAVALA</h1>
-          <span className="splash-ml" lang="ml">കവല · നിങ്ങളുടെ സ്വന്തം അയൽപക്കം</span>
           <p className="splash-tag">Your friendly neighbourhood, trying to do better, one small step at a time.</p>
         </div>
         <div className="splash-actions">
